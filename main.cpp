@@ -6,22 +6,7 @@ using namespace std;
 // output file for debugging
 ofstream fout("out.txt");
 
-namespace __hidden__ {
-    struct print {
-        bool space;
-        print() : space(false) {}
-        ~print() { fout << endl; }
-
-        template <typename T>
-        print &operator , (const T &t) {
-            if (space) fout << ' ';
-            else space = true;
-            fout << t;
-            return *this;
-        }
-    };
-}
-
+namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
 
 class Block {
@@ -63,14 +48,19 @@ class Player {
 	// directional vectors
 	void move(int di, int dj) {
 		i += di, j += dj;
+		print i, j;
 		// seeing if block moved on is a portal
 		auto fid = curMap.ports.find({i, j});
 		if (fid != curMap.ports.end()) {
 			// changing current map and player coordinates
-			tuple<Map, int, int> tp = fid->second;
+			// FIXME
+//			tuple<Map, int, int> tp = fid->second;
 			curMap = get<0>(fid->second);
+			int a = get<1>(fid->second);
+			int b = get<2>(fid->second);
+			fout << a;
 //			i = get<1>(fid->second);
-//		  	j = get<2>(fid->second);
+//			j = get<2>(fid->second);
 		}
 	}
 };
