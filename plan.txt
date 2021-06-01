@@ -1,26 +1,33 @@
-goal of game: rpg game with map, combat, quest system, economy
+goal of game: rpg game with map, combat, quest system, crafting system, economy
 doesn't have to have complex actions, but interesting content is key
 maybe get jay to write some story lines for me
-regularly update the game with new content
+regularly update the game with new content (map area, quests, weapons & gears) to make it fun
 
 remember to make plenty of comments!
 
 development plan:
 -world, camera, and side maps
-	-camera displays player near the center
-	-player movement
-	-implement map class
-	-make a portal into another map
+	*camera displays player near the center
+	*player movement		
+	*implement map class
+	*make a portal into another map
 -player and inventory system
 
 	-player interaction
-		-implement player facing
-		-collecting natural resources
-			-map display resources
-			-resource nodes
+		*implement player facing
+		*collecting natural resources
+			*map display resources
+			*resource nodes				
+			*disappears after harvesting and regrows in a while
 		-talking with npc
-			-npc dialogue system; no choices yet, just talking
-			-buy things from npc
+			-sets game state to be talking, so player can't move
+			-npc class
+				-name, linear dialogues, triggers quest when arrives at certain part
+				
+			
+			-npc dialogue system; gives player choices, each choice will lead to another part of the dialogue
+				-dialogue class, with words, triggered results (maybe give the player a quest), and choice
+			-accept quests from npc
 
 item:
 -items of different types
@@ -54,6 +61,8 @@ map:
 -quests
 	-can be taken from npc
 	-gives rewards automatically when completed
+	-when taken: passes lambda function to player that will be run once in a while
+		-checks for completion status & reward if necessary
 	-types:
 		-killing monsters
 		-collecting natural resources
@@ -67,3 +76,5 @@ map:
 	-attack animation can play out over several frames
 		-damage taken instantly
 
+-crafting
+	-select from a list of recipes and waiting for a while for crafting to complete

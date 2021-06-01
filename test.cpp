@@ -1,16 +1,14 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-class Lol {
-	public:
-	int d;
-	Lol(int d) : d(d) {}
-};
-void hi(Lol *lo) {
-	lo->d = 20;
-}
 int main() {
-	Lol lol(10);
-	hi(&lol);
-	printf("%d\n", lol.d);
+	vector<function<void(int*)>> v;
+	function<void(int*)> f1 = [&] (int *d) {
+		*d = *d + 1;
+	};
+	v.push_back(f1);
+	int a = 2;
+	v[0](&a);
+	v[0](&a);
+	printf("%d\n", a);
 }
