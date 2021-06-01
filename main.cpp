@@ -210,12 +210,17 @@ int main() {
 				}
 			}
 		}
+		if (isTalking) {
+			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
+		}
 		player.dispInventory();
 		// uploads drawing onto terminal
 		refresh();
 		int inp = getch();
 		if (isTalking) {
-			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
+			if (inp == ' ') {
+				curNPC->diaNum = min(int(curNPC->dialogues.size()) - 1, curNPC->diaNum + 1);
+			}
 		}
 		else {
 			if (inp == 'w') player.move(-1, 0);
