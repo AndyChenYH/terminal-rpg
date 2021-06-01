@@ -2,13 +2,7 @@
 using namespace std;
 
 int main() {
-	vector<function<void(int*)>> v;
-	function<void(int*)> f1 = [&] (int *d) {
-		*d = *d + 1;
-	};
-	v.push_back(f1);
-	int a = 2;
-	v[0](&a);
-	v[0](&a);
-	printf("%d\n", a);
+	vector<int> v = {1, 2, 3, 4, 5};
+	*find(v.begin(), v.end(), 2) = 10;
+	printf("%d\n", v[1]);
 }

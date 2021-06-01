@@ -20,11 +20,11 @@ development plan:
 			*resource nodes				
 			*disappears after harvesting and regrows in a while
 		-talking with npc
-			-sets game state to be talking, so player can't move
-				-if is talking with npc, display current dialogue box on the right
-					-reroute inputs
-					-if 'backspace' is detected, stop talking
-					-if 'enter is detected, advance to the next dialogue
+			*sets game state to be talking, so player can't move
+				*if is talking with npc, display current dialogue box on the right
+					*reroute inputs
+					*if '`' is detected, stop talking
+					*if ' ' is detected, advance to the next dialogue
 			-implement dialogues & npc display
 
 -npc class

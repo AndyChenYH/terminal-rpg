@@ -50,6 +50,8 @@ class Dialogue {
 	function<bool(Player*)> trigger;
 	// by default, there's no trigger, since most dialogues are simply text/storytelling
 	Dialogue(string words) : words(words), hasTrigger(false) { }
+	Dialogue(string words, function<bool(Player*)> trigger) 
+		: words(words), hasTrigger(true), trigger(trigger) {}
 };
 class NPC {
 	public:
@@ -166,7 +168,22 @@ int main() {
 	// testing with rose resource node
 	world.resources.insert({{6, 6}, Item("r-rose", '&')});
 	world.resources.insert({{8, 3}, Item("r-honey", '+')});
-	NPC npc1("Joe", {Dialogue("hi there"), Dialogue("how are you"), Dialogue("i'm fine")});
+	// test function
+	function<bool(Player*)> func = [&] (Player *p) -> bool {
+		for (int i = 0; i < (int) p->inventory.size(); i ++) {
+			Item &it = p->inventory[i];
+			if (it.name == "r-rose") {
+				it.amount --;
+				if (it.amount == 0) {
+					p->inventory.erase(p->inventory.begin() + i);
+				}
+				p->inventory.push_back(Item("r-gold", 'G'));
+				return true;
+			}
+		}
+		return false;
+	};
+	NPC npc1("Joe", {Dialogue("give me 1 rose", func), Dialogue("thank you!")});
 	world.npcs.insert({{3, 4}, npc1});
 	while (true) {
 		// clears screen of any output before next cycle
@@ -186,7 +203,7 @@ int main() {
 				}
 				// draw world tile
 				else if (curMap->inBound(ci, cj)) {
-					// see if a port or resource node has to be drawn
+					// see if a port or resource node or npc has to be drawn
 					auto fPort = curMap->ports.find({ci, cj});
 					auto fResource = curMap->resources.find({ci, cj});
 					auto fNPC = curMap->npcs.find({ci, cj});
