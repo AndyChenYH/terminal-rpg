@@ -6,6 +6,7 @@ using namespace std;
 // output file for debugging
 ofstream fout("out.txt");
 
+// python2 style print function for debugging; outputs with fout
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
 
@@ -45,7 +46,8 @@ class Dialogue {
 	string words;
 	bool hasTrigger;
 	// when this dialogue is passed, modifies the player such as giving them a quest or items
-	function<void(Player*)> trigger;
+	// return true if dialogue is allowed to advance (eg: player has met a certain condition)
+	function<bool(Player*)> trigger;
 	// by default, there's no trigger, since most dialogues are simply text/storytelling
 	Dialogue(string words) : words(words), hasTrigger(false) { }
 };
@@ -164,7 +166,7 @@ int main() {
 	// testing with rose resource node
 	world.resources.insert({{6, 6}, Item("r-rose", '&')});
 	world.resources.insert({{8, 3}, Item("r-honey", '+')});
-	NPC npc1("Joe", {Dialogue("hi there"), Dialogue("how are you")});
+	NPC npc1("Joe", {Dialogue("hi there"), Dialogue("how are you"), Dialogue("i'm fine")});
 	world.npcs.insert({{3, 4}, npc1});
 	while (true) {
 		// clears screen of any output before next cycle
@@ -211,15 +213,40 @@ int main() {
 			}
 		}
 		if (isTalking) {
+			print curNPC->diaNum;
 			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
 		}
 		player.dispInventory();
 		// uploads drawing onto terminal
 		refresh();
 		int inp = getch();
+		// currently talking to an NPC; all input is rerouted
 		if (isTalking) {
+			// try to advance dialogue
 			if (inp == ' ') {
-				curNPC->diaNum = min(int(curNPC->dialogues.size()) - 1, curNPC->diaNum + 1);
+				// move onto next dialogue box. make sure it doesn't exceed maximum
+				if (curNPC->diaNum < (int) curNPC->dialogues.size()) {
+					// if this current dialogue box has a trigger lambda
+					if (curNPC->dialogues[curNPC->diaNum].hasTrigger) {
+						// calls lambda function to modify player
+						// if lambda returns true (allows dialogue to advance)
+						if (curNPC->dialogues[curNPC->diaNum].trigger(&player)) {
+							curNPC->diaNum ++;
+						}
+					}
+					else curNPC->diaNum ++;
+				}
+				if (curNPC->diaNum == (int) curNPC->dialogues.size()) {
+					curNPC->diaNum = 0;
+					curNPC = nullptr;
+					isTalking = false;
+				}
+			}
+			// escape conversation
+			else if (inp == '`') {
+				// resetting npc and talking state, allowing player to move again
+				curNPC = nullptr;
+				isTalking = false;
 			}
 		}
 		else {
