@@ -113,7 +113,7 @@ class Player {
 		// if so, just increment the amount
 		for (Item &it : inventory) {
 			if (it.name == newIt.name) {
-				it.amount ++;
+				it.amount += newIt.amount;
 				return;
 			}
 		}
@@ -208,6 +208,10 @@ int main() {
 					// make sure the player doesn't go out of bounds
 					assert(curMap->inBound(ci, cj));
 				}
+				// drawing the facing direction
+				else if (ci == player.i + player.faceI && cj == player.j + player.faceJ) {
+					mvaddch(i, j, 'o');
+				}
 				// draw world tile
 				else if (curMap->inBound(ci, cj)) {
 					// see if a port or resource node or npc has to be drawn
@@ -258,8 +262,10 @@ int main() {
 							curNPC->diaNum ++;
 						}
 					}
+					// if there's not trigger condition to fullfill, advance to the next diaglogue
 					else curNPC->diaNum ++;
 				}
+				// if reaches end of dialogue chain, end talking
 				if (curNPC->diaNum == (int) curNPC->dialogues.size()) {
 					curNPC->diaNum = 0;
 					curNPC = nullptr;

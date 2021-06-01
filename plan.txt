@@ -5,6 +5,9 @@ regularly update the game with new content (map area, quests, weapons & gears) t
 
 remember to make plenty of comments!
 
+list of text boxes
+each has some text + a trigger function
+
 development plan:
 -world, camera, and side maps
 	*camera displays player near the center
@@ -80,7 +83,9 @@ map:
 		-collecting natural resources
 		-visiting a npc
 		-giving an npc something
+	
 -combat
+	
 	-attacks are laid out in a 3x3 grid-like shape with some square being empty
 	-enemies use pathfinding to walk to a square next to the player to attack
 		-then faces in the player's direction to attack
