@@ -64,6 +64,7 @@ class NPC {
 // initializing map first so portal can use it
 class Map {
 	public:
+	string description;
 	int row, col;
 	// map data
 	vector<vector<Block>> data;
@@ -73,7 +74,7 @@ class Map {
 	map<pair<int, int>, Item> resources;
 	// coordinates of NPCs
 	map<pair<int, int>, NPC> npcs;
-	Map(int row, int col) : row(row), col(col) {
+	Map(string description, int row, int col) : description(description), row(row), col(col) {
 		data = vector<vector<Block>>(row, vector<Block>(col));
 	}
 	bool inBound(int i, int j) {
@@ -81,8 +82,8 @@ class Map {
 	}
 };
 
-Map world(30, 30);
-Map inn(10, 10);
+Map world("world map", 30, 30);
+Map inn("cozy inn", 10, 10);
 // current map
 Map *curMap = &world;
 NPC *curNPC;
@@ -107,6 +108,30 @@ class Player {
 			j = get<2>(fid->second);
 		}
 	}
+	void addItem(Item newIt) {
+		// does the player's inventory already have at least one of the resource?
+		// if so, just increment the amount
+		for (Item &it : inventory) {
+			if (it.name == newIt.name) {
+				it.amount ++;
+				return;
+			}
+		}
+		// if the item isn't already in the inventory, make a new spot for it
+		inventory.push_back(newIt);
+	}
+	// if item exists in inventory, take it out and return true
+	// otherwise return false
+	bool takeItem(string takeIt) {
+		for (int ii = 0; ii < (int) inventory.size(); ii ++) {
+			if (takeIt== inventory[ii].name) {
+				inventory[ii].amount --;
+				if (inventory[ii].amount == 0) inventory.erase(inventory.begin() + ii);
+				return true;
+			}
+		}
+		return false;
+	}
 	void act() {
 		// coordinates of block the player is targeting
 		int ci = i + faceI, cj = j + faceJ;
@@ -114,18 +139,7 @@ class Player {
 		// see whether the target block has a resource
 		auto fResource = curMap->resources.find({ci, cj});
 		if (fResource != curMap->resources.end() && fResource->second.regrowTime < frame) {
-			// does the player's inventory already have at least one of the resource?
-			// if so, just increment the amount
-			bool has = false;
-			for (int ii = 0; ii < (int) inventory.size(); ii ++) {
-				if (inventory[ii].name == fResource->second.name) {
-					inventory[ii].amount ++;
-					has = true;
-					break;
-				}
-			}
-			// if the resource isn't already in the inventory, make a new spot for it
-			if (!has) inventory.push_back(fResource->second);
+			addItem(fResource->second);
 			// wait 100000 frames until it regrows
 			fResource->second.regrowTime = frame + 200;
 		}
@@ -168,18 +182,9 @@ int main() {
 	world.resources.insert({{8, 3}, Item("r-honey", '+')});
 	// test function
 	function<bool(Player*)> func = [&] (Player *p) -> bool {
-		for (int i = 0; i < (int) p->inventory.size(); i ++) {
-			Item &it = p->inventory[i];
-			if (it.name == "r-rose") {
-				it.amount --;
-				if (it.amount == 0) {
-					p->inventory.erase(p->inventory.begin() + i);
-				}
-				p->inventory.push_back(Item("r-gold", 'G'));
-				return true;
-			}
-		}
-		return false;
+		bool res = p->takeItem("r-rose");
+		if (res) p->addItem(Item("r-gold", 'G'));
+		return res;
 	};
 	NPC npc1("Joe", {Dialogue("give me 1 rose", func), Dialogue("thank you!")});
 	world.npcs.insert({{3, 4}, npc1});
