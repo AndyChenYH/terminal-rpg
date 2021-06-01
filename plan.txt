@@ -1,0 +1,60 @@
+goal of game: rpg game with map, combat, quest system, economy
+doesn't have to have complex actions, but interesting content is key
+maybe get jay to write some story lines for me
+regularly update the game with new content
+
+remember to make plenty of comments!
+
+development plan:
+-world, camera, and side maps
+	-camera displays player near the center
+	-player movement
+	-implement map class
+	-make a portal into another map
+-player and inventory system
+	-items
+		-gold
+	-player interaction
+		-collecting natural resources
+		-talking with npc
+			-npc dialogue system; no choices yet, just talking
+			-buy things from npc
+
+player:
+-stored in a player class
+-allow extensibility into multiple players in the future
+
+map:
+-allow player to move around in a small section of it
+	-anything outside of this small camera will not be processed
+		-aka enemies will not move, attacks will not go that far
+-stored in a large array
+	-each is a Block object, containing passability, block looks, enemy or an npc standing on it
+		-block looks is simple ascii. some blocks allow players to pass, some don't
+		-npc and enemies are unpassable
+
+-allows the player to interact with its objects
+-has buildings that the player could go into
+	-each separate building has its own map data stored in currentMap
+
+-has npc that the player could interact with
+	-npc do not move
+	-can buy things from npc, who has unlimited inventory
+	-can sell things to npc
+	-can take quests from the npc
+-quests
+	-can be taken from npc
+	-gives rewards automatically when completed
+	-types:
+		-killing monsters
+		-collecting natural resources
+		-visiting a npc
+		-giving an npc something
+-combat
+	-attacks are laid out in a 3x3 grid-like shape with some square being empty
+	-enemies use pathfinding to walk to a square next to the player to attack
+		-then faces in the player's direction to attack
+	-allows the player to attack in the direction they are facing
+	-attack animation can play out over several frames
+		-damage taken instantly
+
