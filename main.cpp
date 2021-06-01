@@ -9,9 +9,14 @@ ofstream fout("out.txt");
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
 
-// max frame
+// max frame: frame will be modded by this to make sure it doesn't go over
 const int MFrame = 1e9;
+// will mainly be used to keep track of time
 int frame = 0;
+bool isTalking = false;
+// forward declarations
+class Player;
+
 class Block {
 	public:
 	bool pass;
@@ -34,13 +39,25 @@ class Item {
 	// resource initialization
 	Item(string name, char look) : name(name), amount(1), look(look), regrowTime(0) { }
 };
+// single dialogue/text box popup
+class Dialogue {
+	public:
+	string words;
+	bool hasTrigger;
+	// when this dialogue is passed, modifies the player such as giving them a quest or items
+	function<void(Player*)> trigger;
+	// by default, there's no trigger, since most dialogues are simply text/storytelling
+	Dialogue(string words) : words(words), hasTrigger(false) { }
+};
 class NPC {
 	public:
 	string name;
 	int diaNum;
-	vector<string> dialogue;
-	NPC(string name, vector<string> dialogue) : name(name), diaNum(0), dialogue(dialogue) { }
-
+	// linear dialogue consisting of words, and a function that runs when player presses enter
+	// can do things such as give player items or quests
+	vector<Dialogue> dialogues;
+	NPC(string name, vector<Dialogue> dialogues) : 
+		name(name), diaNum(0), dialogues(dialogues) { }
 };
 // initializing map first so portal can use it
 class Map {
@@ -52,6 +69,8 @@ class Map {
 	map<pair<int, int>, tuple<Map*, int, int>> ports;
 	// coordinates of resource nodes
 	map<pair<int, int>, Item> resources;
+	// coordinates of NPCs
+	map<pair<int, int>, NPC> npcs;
 	Map(int row, int col) : row(row), col(col) {
 		data = vector<vector<Block>>(row, vector<Block>(col));
 	}
@@ -64,6 +83,7 @@ Map world(30, 30);
 Map inn(10, 10);
 // current map
 Map *curMap = &world;
+NPC *curNPC;
 // should be even numbers
 const int camHei = 20, camWid = 20;
 class Player {
@@ -74,8 +94,9 @@ class Player {
 	Player(int i, int j) : i(i), j(j), health(10) {}	
 	// directional vectors
 	void move(int di, int dj) {
-		faceI = di, faceJ = dj;
-		i += di, j += dj;
+		int newI = i + di, newJ = j + dj;
+		if (!curMap->inBound(newI, newJ) || !curMap->data[newI][newJ].pass) return;
+		i = newI, j = newJ;
 		// seeing if block moved on is a portal
 		auto fid = curMap->ports.find({i, j});
 		if (fid != curMap->ports.end()) {
@@ -89,22 +110,28 @@ class Player {
 		int ci = i + faceI, cj = j + faceJ;
 
 		// see whether the target block has a resource
-		auto fid = curMap->resources.find({ci, cj});
-		if (fid != curMap->resources.end() && fid->second.regrowTime < frame) {
+		auto fResource = curMap->resources.find({ci, cj});
+		if (fResource != curMap->resources.end() && fResource->second.regrowTime < frame) {
 			// does the player's inventory already have at least one of the resource?
 			// if so, just increment the amount
 			bool has = false;
 			for (int ii = 0; ii < (int) inventory.size(); ii ++) {
-				if (inventory[ii].name == fid->second.name) {
+				if (inventory[ii].name == fResource->second.name) {
 					inventory[ii].amount ++;
 					has = true;
 					break;
 				}
 			}
 			// if the resource isn't already in the inventory, make a new spot for it
-			if (!has) inventory.push_back(fid->second);
+			if (!has) inventory.push_back(fResource->second);
 			// wait 100000 frames until it regrows
-			fid->second.regrowTime = (frame + 100000) % MFrame;
+			fResource->second.regrowTime = (frame + 100000) % MFrame;
+		}
+		// see if player has chosen to interact with an npc
+		auto fNPC = curMap->npcs.find({ci, cj});
+		if (fNPC != curMap->npcs.end()) {
+			isTalking = true;
+			curNPC = &(fNPC->second);
 		}
 	}
 	void dispInventory() {
@@ -114,23 +141,31 @@ class Player {
 		}
 	}
 };
-Player player(5, 5);
 
+Player player(5, 5);
 int main() {
 	initscr();
 	cbreak();
+	// allows getch() to get input at any time, without waiting for input
 	nodelay(stdscr, TRUE);
 	keypad(stdscr, TRUE);
 	noecho();
+	
 	// testing with random characters
 	world.data[10][10].look = '(';
+	world.data[10][10].pass = false;
+	world.data[11][10].look = '(';
+	world.data[11][10].pass = false;
 	inn.data[5][5].look = '%';
 	// portal from world to inn
 	world.ports.insert({{1, 1}, {&inn, 3, 3}});
+	// portal from inn to world
 	inn.ports.insert({{9, 9}, {&world, 0, 0}});
 	// testing with rose resource node
 	world.resources.insert({{6, 6}, Item("r-rose", '&')});
 	world.resources.insert({{8, 3}, Item("r-honey", '+')});
+	NPC npc1("Joe", {Dialogue("hi there"), Dialogue("how are you")});
+	world.npcs.insert({{3, 4}, npc1});
 	while (true) {
 		// clears screen of any output before next cycle
 		clear();
@@ -152,16 +187,19 @@ int main() {
 					// see if a port or resource node has to be drawn
 					auto fPort = curMap->ports.find({ci, cj});
 					auto fResource = curMap->resources.find({ci, cj});
+					auto fNPC = curMap->npcs.find({ci, cj});
 					if (fPort != curMap->ports.end()) {
 						// make sure ports and resource node aren't on the same block
-						assert(fResource == curMap->resources.end());
 						mvaddch(i, j, '^');
 					}
 					// draw resource node if it exists in this block
 					else if (fResource != curMap->resources.end()) {
 						// if the resource node has regrown
-						print ">", frame;
 						if (fResource->second.regrowTime < frame) mvaddch(i, j, fResource->second.look);
+					}
+					// draw npc if it exists in this block
+					else if (fNPC != curMap->npcs.end()) {
+						mvaddch(i, j, '0');
 					}
 					// draw normal map block
 					else mvaddch(i, j, curMap->data[ci][cj].look);
@@ -175,16 +213,26 @@ int main() {
 		player.dispInventory();
 		// uploads drawing onto terminal
 		refresh();
-		char inp = getch();
-		if (inp == 'w') player.move(-1, 0);
-		else if (inp == 's') player.move(1, 0);
-		else if (inp == 'a') player.move(0, -1);
-		else if (inp == 'd') player.move(0, 1);
-		// action
-		else if (inp == ' ') player.act();
-
+		int inp = getch();
+		if (isTalking) {
+			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
+		}
+		else {
+			if (inp == 'w') player.move(-1, 0);
+			else if (inp == 's') player.move(1, 0);
+			else if (inp == 'a') player.move(0, -1);
+			else if (inp == 'd') player.move(0, 1);
+			// change player facing
+			else if (inp == KEY_UP) player.faceI = -1, player.faceJ = 0;
+			else if (inp == KEY_DOWN) player.faceI = 1, player.faceJ = 0;
+			else if (inp == KEY_LEFT) player.faceI = 0, player.faceJ = -1;
+			else if (inp == KEY_RIGHT) player.faceI = 0, player.faceJ = 1;
+			// action depending on the player's facing. can be collecting resources or attacking
+			else if (inp == ' ') player.act();
+		}
 		frame ++;
-		if (frame >= MFrame) frame = 0;
+		// make sure frame doesn't overflow
+		frame %= MFrame;
 	}
 	endwin();
 }
