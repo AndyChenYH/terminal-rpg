@@ -25,7 +25,7 @@ development plan:
 					*reroute inputs
 					*if '`' is detected, stop talking
 					*if ' ' is detected, advance to the next dialogue
-			-implement dialogues & npc display
+			*implement dialogues & npc display
 
 -npc class
 	-name, dialogue triggers when acted upon

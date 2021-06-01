@@ -10,9 +10,7 @@ ofstream fout("out.txt");
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
 
-// max frame: frame will be modded by this to make sure it doesn't go over
-const int MFrame = 1e9;
-// will mainly be used to keep track of time
+// should take more than a year to overflow
 int frame = 0;
 bool isTalking = false;
 // forward declarations
@@ -129,7 +127,7 @@ class Player {
 			// if the resource isn't already in the inventory, make a new spot for it
 			if (!has) inventory.push_back(fResource->second);
 			// wait 100000 frames until it regrows
-			fResource->second.regrowTime = (frame + 100000) % MFrame;
+			fResource->second.regrowTime = frame + 200;
 		}
 		// see if player has chosen to interact with an npc
 		auto fNPC = curMap->npcs.find({ci, cj});
@@ -186,6 +184,10 @@ int main() {
 	NPC npc1("Joe", {Dialogue("give me 1 rose", func), Dialogue("thank you!")});
 	world.npcs.insert({{3, 4}, npc1});
 	while (true) {
+		// 50 refreshes a second
+		usleep(20000);
+		frame ++;
+		// make sure frame doesn't overflow
 		// clears screen of any output before next cycle
 		clear();
 		// drawing the scene within camera scope
@@ -279,9 +281,6 @@ int main() {
 			// action depending on the player's facing. can be collecting resources or attacking
 			else if (inp == ' ') player.act();
 		}
-		frame ++;
-		// make sure frame doesn't overflow
-		frame %= MFrame;
 	}
 	endwin();
 }
