@@ -1,0 +1,4 @@
+rose r &
+gold r &
+honey r +
+cactus r }

@@ -60,9 +60,12 @@ class Item {
 	char look;
 	int damage;
 	vector<vector<bool>> aoe;
+	Item() {}
 	// resource initialization
 	Item(string name, char type, char look) : name(name), type(type), look(look) { }
 };
+// preset items mapped from item names
+map<string, Item> items;
 // single dialogue/text box popup
 class Dialogue {
 	public:
@@ -269,7 +272,34 @@ class Player {
 	}
 };
 Item rose("rose", 'r', '&'), gold("gold", 'r', 'G'), honey("honey", 'r', '+'), cactus("cactus", 'r', '}');
+// load a bunch of preset items from assets/items.txt
+void loadItems() {
+	vector<string> img = loadImage("assets/items.txt");
+	int i = 0;
+	Item it;
+	for ( ; i < (int) img.size(); i ++) {
+		if (img[i] == "<item>") {
+			it = Item();
+		}
+		else if (img[i] == "</item>") {
+			items.insert({it.name, it});
+			print it.name, it.type, it.look;
+		}
+		else if (img[i] == "<name>") {
+			it.name = img[i + 1];
+		}
+		else if (img[i] == "<type>") {
+			it.type = img[i + 1][0];
+		}
+		else if (img[i] == "<look>") {
+			it.look = img[i + 1][0];
+		}
+	}
+}
 Player player(5, 5);
+void testCode() {
+	player.addItem(items["rose"]);
+}
 int main() {
 	initscr();
 	cbreak();
@@ -277,6 +307,11 @@ int main() {
 	nodelay(stdscr, TRUE);
 	keypad(stdscr, TRUE);
 	noecho();
+
+	// loading preset items from txt file
+	loadItems();
+	// testing code that can be deleted later
+	testCode();
 	
 	while (true) {
 		// 50 refreshes a second

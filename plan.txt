@@ -55,6 +55,10 @@ item:
 	-weapons
 		-use() will attack where player is facing
 		-plays animation for a few seconds
+	-clothes that add to different stats
+	-different items will be determined through class instances
+		-stored in treemap<name, item>
+	-read in preset items from txt file
 
 
 
