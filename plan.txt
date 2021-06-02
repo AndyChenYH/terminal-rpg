@@ -5,6 +5,18 @@ regularly update the game with new content (map area, quests, weapons & gears) t
 
 remember to make plenty of comments!
 
+game storyline:
+	npc vibing along, monster tries to kill them & village
+	player has conscious and unconscious
+		internal dialogue, giving hints and ques
+		unconscious is big IQ & schemes against player
+			unconsioucs wants to kill bad guy so IT can be the bad guy
+	seemingly innocent at first, then gets darker because influence from unconscious
+		mission become more villanous and evil
+		constantly tries to explain its evil actions
+	unconscious is the tutorial; teaches player how to craft
+
+
 list of text boxes
 each has some text + a trigger function
 
@@ -14,21 +26,6 @@ development plan:
 	*player movement		
 	*implement map class
 	*make a portal into another map
--player and inventory system
-
-	-player interaction
-		*implement player facing
-		*collecting natural resources
-			*map display resources
-			*resource nodes				
-			*disappears after harvesting and regrows in a while
-		-talking with npc
-			*sets game state to be talking, so player can't move
-				*if is talking with npc, display current dialogue box on the right
-					*reroute inputs
-					*if '`' is detected, stop talking
-					*if ' ' is detected, advance to the next dialogue
-			*implement dialogues & npc display
 
 -npc class
 	-name, dialogue triggers when acted upon
@@ -54,13 +51,32 @@ item:
 player:
 -stored in a player class
 -allow extensibility into multiple players in the future
+-player and inventory system
+	-player interaction
+		*implement player facing
+		*collecting natural resources
+			*map display resources
+			*resource nodes				
+			*disappears after harvesting and regrows in a while
+		-talking with npc
+			*sets game state to be talking, so player can't move
+				*if is talking with npc, display current dialogue box on the right
+					*reroute inputs
+					*if '`' is detected, stop talking
+					*if ' ' is detected, advance to the next dialogue
+			*implement dialogues & npc display
+	-draw better looking inventory
+		-set limit on inventory
+		-default view is a bunch of boxes with Item.look character
+		-allow player to press 'i' to enter view inventory mode
 
 map:
 -allow player to move around in a small section of it
 	-anything outside of this small camera will not be processed
 		-aka enemies will not move, attacks will not go that far
 -stored in a large array
-	-each is a Block object, containing passability, block looks, enemy or an npc standing on it
+	-portals (to other locations or other maps) and npcs and resource nodes are stored in treemap
+	-each is a Block object, containing passability
 		-block looks is simple ascii. some blocks allow players to pass, some don't
 		-npc and enemies are unpassable
 
@@ -85,7 +101,6 @@ map:
 		-giving an npc something
 	
 -combat
-	
 	-attacks are laid out in a 3x3 grid-like shape with some square being empty
 	-enemies use pathfinding to walk to a square next to the player to attack
 		-then faces in the player's direction to attack

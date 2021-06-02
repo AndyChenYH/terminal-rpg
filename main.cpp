@@ -13,6 +13,7 @@ namespace __hidden__ { struct print { bool space; print() : space(false) {} ~pri
 // should take more than a year to overflow
 int frame = 0;
 bool isTalking = false;
+bool viewInventory = false;
 // forward declarations
 class Player;
 
@@ -150,10 +151,40 @@ class Player {
 			curNPC = &(fNPC->second);
 		}
 	}
-	void dispInventory() {
-		// display the items in the inventory from top to bottom
-		for (int ii = 0; ii < (int) inventory.size(); ii ++) {
-			mvaddstr(ii, camWid + 2, (inventory[ii].name + " x " + to_string(inventory[ii].amount)).c_str());
+	// relative coordinates to allow easy translation of object
+	void dispInventory(int relI, int relJ) {
+		/* 
+		 * -------------------------------
+		 * |&   50 |$    10|=   40|		|
+		 * |-------|-------|------|------|
+		 * |+   120|       |      |      |
+		 * |-------|-------|------|------|
+		 * |%   300|       |      |      |
+		 * |-------|-------|------|------|
+		 * |       |       |      |      |
+		 * |-------|-------|------|------|
+		 * |       |       |      |      |
+		 * --------|-------|------|------|
+		 *
+		 */
+		// current index in player inventory
+
+		int ci = 0;
+		// draw first top bar
+		mvaddstr(relI, relJ, "---------------------------------");
+		// draw 5 rows of boxes
+		for (int ii = 0; ii < 5; ii ++) {
+			mvaddstr(1 + relI + ii * 2, relJ, "|       |       |       |       |");
+			mvaddstr(2 + relI + ii * 2, relJ, "|-------|-------|-------|-------|");
+		}
+		// the location in the inventory matrix
+		for (int ii = 0; ci < (int) inventory.size(); ii ++) {
+			for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
+				// draw the character look of the item and amount
+				mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
+						(string(1, inventory[ci].look) + "  " + to_string(inventory[ci].amount)).c_str()); 
+				ci ++;
+			}
 		}
 	}
 };
@@ -180,6 +211,9 @@ int main() {
 	// testing with rose resource node
 	world.resources.insert({{6, 6}, Item("r-rose", '&')});
 	world.resources.insert({{8, 3}, Item("r-honey", '+')});
+	world.resources.insert({{6, 5}, Item("r-cactus", '}')});
+	world.resources.insert({{6, 3}, Item("r-apple", 'q')});
+
 	// test function
 	function<bool(Player*)> func = [&] (Player *p) -> bool {
 		bool res = p->takeItem("r-rose");
@@ -240,11 +274,11 @@ int main() {
 				}
 			}
 		}
+		// drawing npc dialogue in talking mode
 		if (isTalking) {
-			print curNPC->diaNum;
 			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
 		}
-		player.dispInventory();
+		player.dispInventory(0, camWid + 20);
 		// uploads drawing onto terminal
 		refresh();
 		int inp = getch();

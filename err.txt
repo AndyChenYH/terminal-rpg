@@ -1,52 +1,20 @@
+/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/vector:1549:12: runtime error: reference binding to null pointer of type 'Item'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/vector:1549:12 in 
+AddressSanitizer:DEADLYSIGNAL
 =================================================================
-==96863==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x6110000009f0 at pc 0x0001094786a3 bp 0x7ffee67b0030 sp 0x7ffee67b0028
-READ of size 1 at 0x6110000009f0 thread T0
-    #0 0x1094786a2 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__is_long() const string:1420
-    #1 0x1094782c6 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::data() const string:1242
-    #2 0x109452d98 in main main.cpp:217
-    #3 0x7fff20499620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
+==5369==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000020 (pc 0x000105b48561 bp 0x7ffeea0c0050 sp 0x7ffeea0bff20 T0)
+==5369==The signal is caused by a READ memory access.
+==5369==Hint: address points to the zero page.
+    #0 0x105b48561 in Player::dispInventory(int, int) main.cpp:177
+    #1 0x105b453d7 in main main.cpp:271
+    #2 0x7fff20499620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
 
-0x6110000009f0 is located 0 bytes to the right of 240-byte region [0x611000000900,0x6110000009f0)
-allocated by thread T0 here:
-    #0 0x1095367ed in wrap__Znwm+0x7d (libclang_rt.asan_osx_dynamic.dylib:x86_64h+0x557ed)
-    #1 0x109475237 in std::__1::vector<Dialogue, std::__1::allocator<Dialogue> >::__vallocate(unsigned long) vector:994
-    #2 0x109474e46 in std::__1::vector<Dialogue, std::__1::allocator<Dialogue> >::vector(std::__1::vector<Dialogue, std::__1::allocator<Dialogue> > const&) vector:1257
-    #3 0x10947752b in NPC::NPC(NPC const&) main.cpp:54
-    #4 0x109451d86 in main main.cpp:170
-    #5 0x7fff20499620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
-
-SUMMARY: AddressSanitizer: heap-buffer-overflow string:1420 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__is_long() const
-Shadow bytes around the buggy address:
-  0x1c22000000e0: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fa fa
-  0x1c22000000f0: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
-  0x1c2200000100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-  0x1c2200000110: 00 00 00 00 00 00 fa fa fa fa fa fa fa fa fa fa
-  0x1c2200000120: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-=>0x1c2200000130: 00 00 00 00 00 00 00 00 00 00 00 00 00 00[fa]fa
-  0x1c2200000140: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  0x1c2200000150: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  0x1c2200000160: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  0x1c2200000170: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  0x1c2200000180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-Shadow byte legend (one shadow byte represents 8 application bytes):
-  Addressable:           00
-  Partially addressable: 01 02 03 04 05 06 07 
-  Heap left redzone:       fa
-  Freed heap region:       fd
-  Stack left redzone:      f1
-  Stack mid redzone:       f2
-  Stack right redzone:     f3
-  Stack after return:      f5
-  Stack use after scope:   f8
-  Global redzone:          f9
-  Global init order:       f6
-  Poisoned by user:        f7
-  Container overflow:      fc
-  Array cookie:            ac
-  Intra object redzone:    bb
-  ASan internal:           fe
-  Left alloca redzone:     ca
-  Right alloca redzone:    cb
-  Shadow gap:              cc
-==96863==ABORTING
-/Users/andychen/Coding/bashFiles/runNcurses.sh: line 6: 96863 Abort trap: 6           ./a.out
+==5369==Register values:
+rax = 0x0000000000000000  rbx = 0x00007ffeea0bff80  rcx = 0x0000100000000000  rdx = 0x000000000000003f  
+rdi = 0x0000000000000000  rsi = 0x00000001068ddda0  rbp = 0x00007ffeea0c0050  rsp = 0x00007ffeea0bff20  
+ r8 = 0x0000000105deb640   r9 = 0x00007ffeea0bf1c0  r10 = 0x0000000000000000  r11 = 0x0000000000000206  
+r12 = 0x0000611000000540  r13 = 0x0000000000000020  r14 = 0x0000000000000028  r15 = 0x0000000000000000  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV main.cpp:177 in Player::dispInventory(int, int)
+==5369==ABORTING
+/Users/andychen/Coding/bashFiles/runNcurses.sh: line 6:  5369 Abort trap: 6           ./a.out
