@@ -56,11 +56,10 @@ class Item {
 	char type;
 	// single character appearance
 	char look;
-	int regrowTime;
 	int damage;
 	vector<vector<bool>> aoe;
 	// resource initialization
-	Item(string name, char type, char look) : name(name), type(type), look(look), regrowTime(0) { }
+	Item(string name, char type, char look) : name(name), type(type), look(look) { }
 };
 // single dialogue/text box popup
 class Dialogue {
@@ -94,8 +93,8 @@ class Map {
 	vector<vector<Block>> data;
 	// portals translates current map's coordinates to another map's coordinates
 	map<pair<int, int>, tuple<Map*, int, int>> ports;
-	// coordinates of resource nodes
-	map<pair<int, int>, Item> resources;
+	// coordinates of resource nodes, mapped to Item and their regrow times
+	map<pair<int, int>, pair<Item, int>> resources;
 	// coordinates of NPCs
 	map<pair<int, int>, NPC> npcs;
 	Map(string description, int row, int col) : description(description), row(row), col(col) {
@@ -177,10 +176,10 @@ class Player {
 
 		// see whether the target block has a resource
 		auto fResource = curMap->resources.find({ci, cj});
-		if (fResource != curMap->resources.end() && fResource->second.regrowTime < frame) {
-			addItem(fResource->second);
+		if (fResource != curMap->resources.end() && fResource->second.second < frame) {
+			addItem(fResource->second.first);
 			// wait 200 frames until it regrows
-			fResource->second.regrowTime = frame + 200;
+			fResource->second.second = frame + 200;
 		}
 		// see if player has chosen to interact with an npc
 		auto fNPC = curMap->npcs.find({ci, cj});
@@ -234,9 +233,9 @@ int main() {
 	// portal from inn to world
 	inn.ports.insert({{9, 9}, {&world, 0, 0}});
 	// testing with rose resource node
-	world.resources.insert({{6, 6}, rose});
-	world.resources.insert({{8, 3}, honey});
-	world.resources.insert({{6, 5}, cactus});
+	world.resources.insert({{6, 6}, {rose, 0}});
+	world.resources.insert({{8, 3}, {honey, 0}});
+	world.resources.insert({{6, 5}, {cactus, 0}});
 
 	// test function
 	function<bool(Player*)> func = [&] (Player *p) -> bool {
@@ -279,7 +278,7 @@ int main() {
 					// draw resource node if it exists in this block
 					else if (fResource != curMap->resources.end()) {
 						// if the resource node has regrown
-						if (fResource->second.regrowTime < frame) mvaddch(i, j, fResource->second.look);
+						if (fResource->second.second < frame) mvaddch(i, j, fResource->second.first.look);
 					}
 					// draw npc if it exists in this block
 					else if (fNPC != curMap->npcs.end()) {
