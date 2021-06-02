@@ -1,3 +1,1 @@
-
-g++ -std=c++17 -lncurses main.cpp
-./a.out
+g++ -std=c++17 main.cpp -lncurses && ./a.out
