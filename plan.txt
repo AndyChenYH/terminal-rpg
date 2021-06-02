@@ -15,6 +15,7 @@ game storyline:
 		mission become more villanous and evil
 		constantly tries to explain its evil actions
 	unconscious is the tutorial; teaches player how to craft
+-load image from txt file & draw
 
 
 list of text boxes
@@ -27,19 +28,19 @@ development plan:
 	*implement map class
 	*make a portal into another map
 
--npc class
-	-name, dialogue triggers when acted upon
-	-dialogue system 
-		-dialogue class with member variables string, trigger lambda function
-		-disables usual key presses when isTalking is true
-			-all input is routed with conditional
-		-linear progression by pressing 'enter'
-			-confirmation of quest is pressing 'enter'
-			-player can exit at any time with 'backspace'
-		-string is the dialogue description
-		-the lambda can give the player a quest
+*npc class
+	*name, dialogue triggers when acted upon
+	*dialogue system 
+		*dialogue class with member variables string, trigger lambda function
+		*disables usual key presses when isTalking is true
+			*all input is routed with conditional
+		*linear progression by pressing 'enter'
+			*confirmation of quest is pressing 'enter'
+			*player can exit at any time with 'backspace'
+		*string is the dialogue description
+		*the lambda can give the player a quest
 
--accept quests from npc
+*accept quests from npc
 
 item:
 -items of different types

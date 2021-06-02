@@ -10,6 +10,7 @@ ofstream fout("out.txt");
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
 
+
 // should take more than a year to overflow
 int frame = 0;
 bool isTalking = false;
@@ -98,9 +99,12 @@ class Player {
 	// quest lambda functions
 	vector<function<bool(Player*)>> quests;
 	Player(int i, int j) : i(i), j(j), health(10) {}	
+	// called every frame to check quest completion status & give reward
 	void checkQuests() {
 		for (int ii = 0; ii < (int) quests.size(); ii ++) {
+			// quest returns bool based on completed or not
 			bool res = quests[ii](this);
+			// if completed, erase quest from list 
 			if (res) {
 				quests.erase(quests.begin() + ii);
 				ii --;
@@ -183,6 +187,22 @@ class Player {
 		}
 	}
 };
+// loads image from txt file and returns as list of horizontal lines
+vector<string> loadImage(string fil) {
+	ifstream fin(fil);
+	vector<string> res;
+	string ln;
+	while (getline(fin, ln)) {
+		res.push_back(ln);
+	}
+	return res;
+}
+// draws image onto screen with top left corner at (relI, relJ)
+void drawImage(int relI, int relJ, vector<string> img) {
+	for (int i = 0; i < (int) img.size(); i ++) {
+		mvaddstr(relI + i, relJ, img[i].c_str());
+	}
+}
 
 Player player(5, 5);
 int main() {
@@ -283,7 +303,12 @@ int main() {
 		if (isTalking) {
 			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
 		}
+		// drawing player inventory
 		if (viewInventory) player.dispInventory(0, camWid + 20);
+
+		// testing drawing image
+		drawImage(0, camWid + 30, loadImage("assets/tribal.txt"));
+
 		// uploads drawing onto terminal
 		refresh();
 		int inp = getch();

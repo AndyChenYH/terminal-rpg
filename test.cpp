@@ -2,7 +2,10 @@
 using namespace std;
 
 int main() {
-	vector<int> v = {1, 2, 3, 4, 5};
-	*find(v.begin(), v.end(), 2) = 10;
-	printf("%d\n", v[1]);
+	ifstream fin("assets/manface1.txt");
+	string ln;
+	while (getline(fin, ln)) {
+		cout << ln << endl;
+		printf("%d\n", (int) ln.size());
+	}
 }
