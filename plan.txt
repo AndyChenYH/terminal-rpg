@@ -25,6 +25,13 @@ development plan:
 	*player movement		
 	*implement map class
 	*make a portal into another map
+	-read in map from txt file
+		*including look, and passibility in matrix format
+		*use HTML style <> </> tags with nested functions
+		-read in resource nodes from map
+		-read in portals 
+		-read in NPC
+		-
 
 *npc class
 	*name, dialogue triggers when acted upon
@@ -47,6 +54,9 @@ item:
 		-use() may provide healing function
 	-weapons
 		-use() will attack where player is facing
+		-plays animation for a few seconds
+
+
 
 player:
 -stored in a player class

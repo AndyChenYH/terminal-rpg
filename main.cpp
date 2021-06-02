@@ -9,6 +9,8 @@ ofstream fout("out.txt");
 // python2 style print function for debugging; outputs with fout
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
+
+
 // loads image from txt file and returns as list of horizontal lines
 vector<string> loadImage(string fil) {
 	ifstream fin(fil);
@@ -71,6 +73,7 @@ class Dialogue {
 	function<bool(Player*)> trigger;
 	// by default, there's no trigger, since most dialogues are simply text/storytelling
 	Dialogue(string words) : words(words), hasTrigger(false) { }
+	// dialogue with trigger function (must return true to proceed and can modify player)
 	Dialogue(string words, function<bool(Player*)> trigger) 
 		: words(words), hasTrigger(true), trigger(trigger) {}
 };
@@ -81,8 +84,8 @@ class NPC {
 	// linear dialogue consisting of words, and a function that runs when player presses enter
 	// can do things such as give player items or quests
 	vector<Dialogue> dialogues;
-	NPC(string name, vector<Dialogue> dialogues) : 
-		name(name), diaNum(0), dialogues(dialogues) { }
+	NPC(string name, vector<Dialogue> dialogues) 
+		: name(name), diaNum(0), dialogues(dialogues) { }
 };
 // initializing map first so portal can use it
 class Map {
@@ -97,6 +100,49 @@ class Map {
 	map<pair<int, int>, pair<Item, int>> resources;
 	// coordinates of NPCs
 	map<pair<int, int>, NPC> npcs;
+	// read map from file
+	// html-style enclosure
+	// make sure there are no extra spaces
+	Map(string file) {
+		// loading file data as a bunch of lines (using loadImage function for convience)
+		vector<string> img = loadImage(file);
+		// current line in the file
+		int i = 0;
+		// function to load basic look
+		// also initializes size of map (row and column)
+		auto basicLook = [&] () -> void {
+			i ++;
+			row = 0, col = img[i].size();
+			for ( ; img[i] != "</basicLook>"; i ++) {
+				// add new row to map data
+				data.push_back(vector<Block>(col));
+				for (int j = 0; j < col; j ++) {
+					data[row][j].look = img[i][j];
+				}
+				row ++;
+			}
+		};
+		// function to read in passability
+		auto passability = [&] () -> void {
+			i ++;
+			// simple nested for loop to read in passibility
+			// i is index within img, ii is index within data
+			for (int ii = 0; ii < row; ii ++, i ++) {
+				for (int j = 0; j < col; j ++) {
+					data[ii][j].pass = img[i][j] == '0' ? true : false;
+				}
+			}
+		};
+		for ( ; i < (int) img.size(); i ++) {
+			if (img[i] == "<basicLook>") {
+				basicLook();
+			}
+			else if (img[i] == "<passability>") {
+				passability();
+			}
+		}
+		
+	}
 	Map(string description, int row, int col) : description(description), row(row), col(col) {
 		data = vector<vector<Block>>(row, vector<Block>(col));
 	}
@@ -105,7 +151,7 @@ class Map {
 	}
 };
 
-Map world("world map", 30, 30);
+Map world("assets/worldMap.txt");
 Map inn("cozy inn", 10, 10);
 // current map
 Map *curMap = &world;
@@ -114,6 +160,7 @@ NPC *curNPC;
 const int camHei = 20, camWid = 20;
 class Player {
 	public:
+	// coordinates and facing directional vectors
 	int i, j, faceI, faceJ;
 	int health;
 	// item and amount
@@ -136,11 +183,13 @@ class Player {
 	// directional vectors
 	void move(int di, int dj) {
 		int newI = i + di, newJ = j + dj;
+		// if moving out of bounds or into an unpassable block, don't move
 		if (!curMap->inBound(newI, newJ) || !curMap->data[newI][newJ].pass) return;
 		i = newI, j = newJ;
 		// seeing if block moved on is a portal
 		auto fid = curMap->ports.find({i, j});
 		if (fid != curMap->ports.end()) {
+			// perform portal teleportation
 			curMap = get<0>(fid->second);
 			i = get<1>(fid->second);
 			j = get<2>(fid->second);
@@ -162,8 +211,10 @@ class Player {
 	// otherwise return false
 	bool takeItem(Item takeIt, int num = 1) {
 		for (int ii = 0; ii < (int) inventory.size(); ii ++) {
+			// if has item and has enough amount
 			if (takeIt.name == inventory[ii].first.name && inventory[ii].second >= num) {
 				inventory[ii].second -= num;
+				// if item amount is zero, remove it from inventory
 				if (inventory[ii].second == 0) inventory.erase(inventory.begin() + ii);
 				return true;
 			}
@@ -174,22 +225,25 @@ class Player {
 		// coordinates of block the player is targeting
 		int ci = i + faceI, cj = j + faceJ;
 
-		// see whether the target block has a resource
 		auto fResource = curMap->resources.find({ci, cj});
+		// see whether the target block has a resource and current time is past its regrow time
 		if (fResource != curMap->resources.end() && fResource->second.second < frame) {
 			addItem(fResource->second.first);
-			// wait 200 frames until it regrows
+			// set resource's regrow time to 200 frames in the future
 			fResource->second.second = frame + 200;
 		}
 		// see if player has chosen to interact with an npc
 		auto fNPC = curMap->npcs.find({ci, cj});
 		if (fNPC != curMap->npcs.end()) {
+			// set talking mode
 			isTalking = true;
 			curNPC = &(fNPC->second);
 		}
 	}
 	void dispHotbar(int relI, int relJ) {
+		// draw outline of hotbar
 		drawImage(0, camWid + 20, hotbarBox);
+		// draw items within outline
 		for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
 				mvaddstr(1 + relI, 1 + relJ + jj * 8, 
 						(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
@@ -198,10 +252,12 @@ class Player {
 	}
 	// relative coordinates to allow easy translation of object
 	void dispInventory(int relI, int relJ) {
+		// draw outline of inventory
 		drawImage(relI, relJ, inventoryBox);
 		// current index inside player's inventory
 		int ci = 0;
-		// the location in the inventory matrix
+		// ii and jj are the location in the inventory matrix
+		// could tecnically extend forever
 		for (int ii = 0; ci < (int) inventory.size(); ii ++) {
 			for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
 				// draw the character look of the item and amount
@@ -222,35 +278,12 @@ int main() {
 	keypad(stdscr, TRUE);
 	noecho();
 	
-	// testing with random characters
-	world.data[10][10].look = '(';
-	world.data[10][10].pass = false;
-	world.data[11][10].look = '(';
-	world.data[11][10].pass = false;
-	inn.data[5][5].look = '%';
-	// portal from world to inn
-	world.ports.insert({{1, 1}, {&inn, 3, 3}});
-	// portal from inn to world
-	inn.ports.insert({{9, 9}, {&world, 0, 0}});
-	// testing with rose resource node
-	world.resources.insert({{6, 6}, {rose, 0}});
-	world.resources.insert({{8, 3}, {honey, 0}});
-	world.resources.insert({{6, 5}, {cactus, 0}});
-
-	// test function
-	function<bool(Player*)> func = [&] (Player *p) -> bool {
-		bool res = p->takeItem(rose, 2);
-		if (res) p->addItem(gold, 3);
-		return res;
-	};
-	NPC npc1("Joe", {Dialogue("give me 2 roses", func), Dialogue("thank you!")});
-	world.npcs.insert({{3, 4}, npc1});
 	while (true) {
 		// 50 refreshes a second
 		usleep(20000);
 		frame ++;
 		player.checkQuests();
-		// clears screen of any output before next cycle
+		// clears screen of any output before next cycle; ncurses optimizes which characters to change
 		erase();
 		// drawing the scene within camera scope
 		// i and j are the cli screen positions
@@ -262,8 +295,6 @@ int main() {
 				// draw player
 				if (ci == player.i && cj == player.j) {
 					mvaddch(i, j, '@');
-					// make sure the player doesn't go out of bounds
-					assert(curMap->inBound(ci, cj));
 				}
 				// draw world tile
 				else if (curMap->inBound(ci, cj)) {
