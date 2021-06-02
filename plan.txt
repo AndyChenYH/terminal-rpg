@@ -92,8 +92,13 @@ map:
 -quests
 	-can be taken from npc
 	-gives rewards automatically when completed
+	-quest class with string(quest description), and lambda function that checks for completion & gives rewards
 	-when taken: passes lambda function to player that will be run once in a while
 		-checks for completion status & reward if necessary
+			-function<bool(Player*)>
+			-returns true and false based on quest completion status & whether its ok to remove quest
+			-modifies player stats as needed
+			-every few frames, loops through list of quests & runs lambda function
 	-types:
 		-killing monsters
 		-collecting natural resources

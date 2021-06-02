@@ -209,16 +209,6 @@ int main() {
 	world.resources.insert({{6, 5}, Item("r-cactus", '}')});
 	world.resources.insert({{6, 3}, Item("r-apple", 'q')});
 
-	// testing quest system
-	function<bool(Player*)> quest1 = [&] (Player *pl) -> bool {
-		if (pl->i == 7) {
-			pl->addItem(Item("r-gold", 'G'));
-			return true;
-		}
-		return false;
-	};
-	player.quests.push_back(quest1);
-
 	// test function
 	function<bool(Player*)> func = [&] (Player *p) -> bool {
 		bool res = p->takeItem("r-rose");
