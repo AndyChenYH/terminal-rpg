@@ -33,12 +33,12 @@ class Item {
 	public:
 	// weapon is "w-name", resource is "r-name"
 	string name;
-	int amount, damage;
+	int damage;
 	char look;
 	int regrowTime;
 	vector<vector<bool>> aoe;
 	// resource initialization
-	Item(string name, char look) : name(name), amount(1), look(look), regrowTime(0) { }
+	Item(string name, char look) : name(name), look(look), regrowTime(0) { }
 };
 // single dialogue/text box popup
 class Dialogue {
@@ -95,7 +95,8 @@ class Player {
 	public:
 	int i, j, faceI, faceJ;
 	int health;
-	vector<Item> inventory;
+	// item and amount
+	vector<pair<Item, int>> inventory;
 	// quest lambda functions
 	vector<function<bool(Player*)>> quests;
 	Player(int i, int j) : i(i), j(j), health(10) {}	
@@ -124,25 +125,25 @@ class Player {
 			j = get<2>(fid->second);
 		}
 	}
-	void addItem(Item newIt) {
+	void addItem(Item newIt, int num = 1) {
 		// does the player's inventory already have at least one of the resource?
 		// if so, just increment the amount
-		for (Item &it : inventory) {
-			if (it.name == newIt.name) {
-				it.amount += newIt.amount;
+		for (pair<Item, int> &pp : inventory) {
+			if (pp.first.name == newIt.name) {
+				pp.second += num;
 				return;
 			}
 		}
 		// if the item isn't already in the inventory, make a new spot for it
-		inventory.push_back(newIt);
+		inventory.push_back({newIt, num});
 	}
 	// if item exists in inventory, take it out and return true
 	// otherwise return false
-	bool takeItem(string takeIt) {
+	bool takeItem(Item takeIt, int num = 1) {
 		for (int ii = 0; ii < (int) inventory.size(); ii ++) {
-			if (takeIt== inventory[ii].name) {
-				inventory[ii].amount --;
-				if (inventory[ii].amount == 0) inventory.erase(inventory.begin() + ii);
+			if (takeIt.name == inventory[ii].first.name && inventory[ii].second >= num) {
+				inventory[ii].second -= num;
+				if (inventory[ii].second == 0) inventory.erase(inventory.begin() + ii);
 				return true;
 			}
 		}
@@ -181,7 +182,7 @@ class Player {
 			for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
 				// draw the character look of the item and amount
 				mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
-						(string(1, inventory[ci].look) + "   " + to_string(inventory[ci].amount)).c_str()); 
+						(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second)).c_str()); 
 				ci ++;
 			}
 		}
@@ -203,7 +204,7 @@ void drawImage(int relI, int relJ, vector<string> img) {
 		mvaddstr(relI + i, relJ, img[i].c_str());
 	}
 }
-
+Item rose("r-rose", '&'), gold("r-gold", 'G'), honey("r-honey", '+'), cactus("r-cactus", '}');
 Player player(5, 5);
 int main() {
 	initscr();
@@ -224,28 +225,17 @@ int main() {
 	// portal from inn to world
 	inn.ports.insert({{9, 9}, {&world, 0, 0}});
 	// testing with rose resource node
-	world.resources.insert({{6, 6}, Item("r-rose", '&')});
-	world.resources.insert({{8, 3}, Item("r-honey", '+')});
-	world.resources.insert({{6, 5}, Item("r-cactus", '}')});
-	world.resources.insert({{6, 3}, Item("r-apple", 'q')});
-
-	// testing quest system
-	function<bool(Player*)> quest1 = [&] (Player *pl) -> bool {
-		if (pl->i == 7) {
-			pl->addItem(Item("r-gold", 'G'));
-			return true;
-		}
-		return false;
-	};
-	player.quests.push_back(quest1);
+	world.resources.insert({{6, 6}, rose});
+	world.resources.insert({{8, 3}, honey});
+	world.resources.insert({{6, 5}, cactus});
 
 	// test function
 	function<bool(Player*)> func = [&] (Player *p) -> bool {
-		bool res = p->takeItem("r-rose");
-		if (res) p->addItem(Item("r-gold", 'G'));
+		bool res = p->takeItem(rose, 2);
+		if (res) p->addItem(gold, 3);
 		return res;
 	};
-	NPC npc1("Joe", {Dialogue("give me 1 rose", func), Dialogue("thank you!")});
+	NPC npc1("Joe", {Dialogue("give me 2 roses", func), Dialogue("thank you!")});
 	world.npcs.insert({{3, 4}, npc1});
 	while (true) {
 		// 50 refreshes a second
@@ -253,7 +243,7 @@ int main() {
 		frame ++;
 		player.checkQuests();
 		// clears screen of any output before next cycle
-		clear();
+		erase();
 		// drawing the scene within camera scope
 		// i and j are the cli screen positions
 		for (int i = 0; i < camWid; i ++) {
@@ -266,10 +256,6 @@ int main() {
 					mvaddch(i, j, '@');
 					// make sure the player doesn't go out of bounds
 					assert(curMap->inBound(ci, cj));
-				}
-				// drawing the facing direction
-				else if (ci == player.i + player.faceI && cj == player.j + player.faceJ) {
-					mvaddch(i, j, 'o');
 				}
 				// draw world tile
 				else if (curMap->inBound(ci, cj)) {
@@ -305,9 +291,6 @@ int main() {
 		}
 		// drawing player inventory
 		if (viewInventory) player.dispInventory(0, camWid + 20);
-
-		// testing drawing image
-		drawImage(0, camWid + 30, loadImage("assets/tribal.txt"));
 
 		// uploads drawing onto terminal
 		refresh();
