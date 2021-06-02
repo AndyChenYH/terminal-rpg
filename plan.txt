@@ -71,8 +71,8 @@ player:
 		-while in view inventory mode, player can use arrow keys to navigate around inventory
 			-displays a specific description of item
 		-hotbar
-			-5 items that the player can instantly access using 1-5 number keys
-			-ie
+			-4 items that the player can instantly access using 1-4 number keys
+			-
 		
 
 map:

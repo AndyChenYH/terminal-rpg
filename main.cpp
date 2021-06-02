@@ -9,12 +9,32 @@ ofstream fout("out.txt");
 // python2 style print function for debugging; outputs with fout
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
+// loads image from txt file and returns as list of horizontal lines
+vector<string> loadImage(string fil) {
+	ifstream fin(fil);
+	vector<string> res;
+	string ln;
+	while (getline(fin, ln)) {
+		res.push_back(ln);
+	}
+	return res;
+}
+// draws image onto screen with top left corner at (relI, relJ)
+void drawImage(int relI, int relJ, vector<string> img) {
+	for (int i = 0; i < (int) img.size(); i ++) {
+		mvaddstr(relI + i, relJ, img[i].c_str());
+	}
+}
 
+// load images before hand to save time
+vector<string> hotbarBox = loadImage("assets/hotbarBox.txt");
+vector<string> inventoryBox = loadImage("assets/inventoryBox.txt");
 
-// should take more than a year to overflow
+// should take more than a year to overflow integer size limit
 int frame = 0;
 bool isTalking = false;
 bool viewInventory = false;
+
 // forward declarations
 class Player;
 
@@ -31,14 +51,16 @@ class Block {
 };
 class Item {
 	public:
-	// weapon is "w-name", resource is "r-name"
 	string name;
-	int damage;
+	// w is weapon, r is resource
+	char type;
+	// single character appearance
 	char look;
 	int regrowTime;
+	int damage;
 	vector<vector<bool>> aoe;
 	// resource initialization
-	Item(string name, char look) : name(name), look(look), regrowTime(0) { }
+	Item(string name, char type, char look) : name(name), type(type), look(look), regrowTime(0) { }
 };
 // single dialogue/text box popup
 class Dialogue {
@@ -157,7 +179,7 @@ class Player {
 		auto fResource = curMap->resources.find({ci, cj});
 		if (fResource != curMap->resources.end() && fResource->second.regrowTime < frame) {
 			addItem(fResource->second);
-			// wait 100000 frames until it regrows
+			// wait 200 frames until it regrows
 			fResource->second.regrowTime = frame + 200;
 		}
 		// see if player has chosen to interact with an npc
@@ -167,16 +189,19 @@ class Player {
 			curNPC = &(fNPC->second);
 		}
 	}
+	void dispHotbar(int relI, int relJ) {
+		drawImage(0, camWid + 20, hotbarBox);
+		for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
+				mvaddstr(1 + relI, 1 + relJ + jj * 8, 
+						(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
+
+		}
+	}
 	// relative coordinates to allow easy translation of object
 	void dispInventory(int relI, int relJ) {
+		drawImage(relI, relJ, inventoryBox);
+		// current index inside player's inventory
 		int ci = 0;
-		// draw first top bar
-		mvaddstr(relI, relJ, "---------------------------------");
-		// draw 5 rows of boxes
-		for (int ii = 0; ii < 5; ii ++) {
-			mvaddstr(1 + relI + ii * 2, relJ, "|       |       |       |       |");
-			mvaddstr(2 + relI + ii * 2, relJ, "|-------|-------|-------|-------|");
-		}
 		// the location in the inventory matrix
 		for (int ii = 0; ci < (int) inventory.size(); ii ++) {
 			for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
@@ -188,23 +213,7 @@ class Player {
 		}
 	}
 };
-// loads image from txt file and returns as list of horizontal lines
-vector<string> loadImage(string fil) {
-	ifstream fin(fil);
-	vector<string> res;
-	string ln;
-	while (getline(fin, ln)) {
-		res.push_back(ln);
-	}
-	return res;
-}
-// draws image onto screen with top left corner at (relI, relJ)
-void drawImage(int relI, int relJ, vector<string> img) {
-	for (int i = 0; i < (int) img.size(); i ++) {
-		mvaddstr(relI + i, relJ, img[i].c_str());
-	}
-}
-Item rose("r-rose", '&'), gold("r-gold", 'G'), honey("r-honey", '+'), cactus("r-cactus", '}');
+Item rose("rose", 'r', '&'), gold("gold", 'r', 'G'), honey("honey", 'r', '+'), cactus("cactus", 'r', '}');
 Player player(5, 5);
 int main() {
 	initscr();
@@ -291,6 +300,9 @@ int main() {
 		}
 		// drawing player inventory
 		if (viewInventory) player.dispInventory(0, camWid + 20);
+		else {
+			player.dispHotbar(0, camWid + 20);
+		}
 
 		// uploads drawing onto terminal
 		refresh();
@@ -324,6 +336,11 @@ int main() {
 				// resetting npc and talking state, allowing player to move again
 				curNPC = nullptr;
 				isTalking = false;
+			}
+		}
+		else if (viewInventory) {
+			if (inp == 'e') {
+				viewInventory = false;
 			}
 		}
 		else {
