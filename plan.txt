@@ -12,14 +12,23 @@ development plan:
 	-implement map class
 	-make a portal into another map
 -player and inventory system
-	-items
-		-gold
+
 	-player interaction
+		-implement player facing
 		-collecting natural resources
+			-map display resources
+			-resource nodes
 		-talking with npc
 			-npc dialogue system; no choices yet, just talking
 			-buy things from npc
 
+item:
+-items of different types
+	-attributes: name, damage, amount, AOE pattern, use() function
+	-resources
+		-use() may provide healing function
+	-weapons
+		-use() will attack where player is facing
 player:
 -stored in a player class
 -allow extensibility into multiple players in the future

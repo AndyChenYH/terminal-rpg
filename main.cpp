@@ -20,6 +20,17 @@ class Block {
 	Block(bool pass, char look) : pass(pass), look(look) {
 	}
 };
+class Item {
+	public:
+	// weapon is "w-name", resource is "r-name"
+	string name;
+	int amount, damage;
+	char look;
+	vector<vector<bool>> aoe;
+	Item() {}
+	// resource initialization
+	Item(string name, char look) : name(name), look(look) { }
+};
 // initializing map first so portal can use it
 class Map {
 	public:
@@ -27,7 +38,8 @@ class Map {
 	// map data
 	vector<vector<Block>> data;
 	// portals translates current map's coordinates to another map's coordinates
-	map<pair<int, int>, tuple<Map, int, int>> ports;
+	map<pair<int, int>, tuple<Map*, int, int>> ports;
+	map<pair<int, int>, Item> resources;
 	Map() {}
 	Map(int row, int col) : row(row), col(col) {
 		data = vector<vector<Block>>(row, vector<Block>(col));
@@ -40,27 +52,24 @@ class Map {
 Map world(30, 30);
 Map inn(10, 10);
 // current map
-Map curMap;
+Map *curMap = &world;
 class Player {
 	public:
-	int i, j;
-	Player(int i, int j) : i(i), j(j) {}	
+	int i, j, faceI, faceJ;
+	int health;
+	vector<Item> inventory;
+	Player(int i, int j, int health) : i(i), j(j), health(health) {}	
 	// directional vectors
 	void move(int di, int dj) {
+		faceI = di, faceJ = dj;
 		i += di, j += dj;
 		print i, j;
 		// seeing if block moved on is a portal
-		auto fid = curMap.ports.find({i, j});
-		if (fid != curMap.ports.end()) {
-			// changing current map and player coordinates
-			// FIXME
-//			tuple<Map, int, int> tp = fid->second;
+		auto fid = curMap->ports.find({i, j});
+		if (fid != curMap->ports.end()) {
 			curMap = get<0>(fid->second);
-			int a = get<1>(fid->second);
-			int b = get<2>(fid->second);
-			fout << a;
-//			i = get<1>(fid->second);
-//			j = get<2>(fid->second);
+			i = get<1>(fid->second);
+			j = get<2>(fid->second);
 		}
 	}
 };
@@ -77,9 +86,9 @@ int main() {
 	// setting up the world
 	world.data[10][10].look = '(';
 	inn.data[5][5].look = '%';
-	world.ports.insert({{1, 1}, {inn, 3, 3}});
+	world.ports.insert({{1, 1}, {&inn, 3, 3}});
+
 	// since curMap is a new copy, it has to be assigned to the world after initialization
-	curMap = world;
 	int frame = 0;
 	while (true) {
 		// clears screen of any output before next cycle
@@ -92,11 +101,15 @@ int main() {
 				// draw player
 				if (ci == player.i && cj == player.j) {
 					mvaddch(i, j, '@');
-					assert(curMap.inBound(ci, cj));
+					assert(curMap->inBound(ci, cj));
 				}
 				// draw world tile
-				else if (curMap.inBound(ci, cj)) {
-					mvaddch(i, j, curMap.data[ci][cj].look);
+				else if (curMap->inBound(ci, cj)) {
+					auto fid = curMap->ports.find({ci, cj});
+					if (fid != curMap->ports.end()) {
+						mvaddch(i, j, '^');
+					}
+					else mvaddch(i, j, curMap->data[ci][cj].look);
 				}
 				// empty void
 				else {
@@ -111,7 +124,7 @@ int main() {
 		else if (inp == 'a') player.move(0, -1);
 		else if (inp == 'd') player.move(0, 1);
 
-		if (frame == 5000000) frame = 0;
+		if (frame >= 5000000) frame = 0;
 	}
 	endwin();
 }
