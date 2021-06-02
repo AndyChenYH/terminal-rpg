@@ -160,7 +160,7 @@ Map inn("cozy inn", 10, 10);
 Map *curMap = &world;
 NPC *curNPC;
 // should be even numbers
-const int camHei = 20, camWid = 20;
+const int camHei = 40, camWid = 40;
 class Player {
 	public:
 	// coordinates and facing directional vectors
@@ -299,6 +299,7 @@ void loadItems() {
 Player player(5, 5);
 void testCode() {
 	player.addItem(items["rose"]);
+	world.ports.insert({{10, 10}, {&inn, 3, 3}});
 }
 int main() {
 	initscr();
@@ -307,6 +308,10 @@ int main() {
 	nodelay(stdscr, TRUE);
 	keypad(stdscr, TRUE);
 	noecho();
+	start_color();
+	init_pair(1, COLOR_WHITE, COLOR_BLACK);
+	init_pair(2, COLOR_CYAN, COLOR_BLACK);
+	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
 
 	// loading preset items from txt file
 	loadItems();
@@ -339,7 +344,9 @@ int main() {
 					auto fNPC = curMap->npcs.find({ci, cj});
 					if (fPort != curMap->ports.end()) {
 						// make sure ports and resource node aren't on the same block
+						attron(COLOR_PAIR(1));
 						mvaddch(i, j, '^');
+						attroff(COLOR_PAIR(1));
 					}
 					// draw resource node if it exists in this block
 					else if (fResource != curMap->resources.end()) {
