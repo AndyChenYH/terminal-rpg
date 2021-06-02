@@ -153,22 +153,6 @@ class Player {
 	}
 	// relative coordinates to allow easy translation of object
 	void dispInventory(int relI, int relJ) {
-		/* 
-		 * -------------------------------
-		 * |&   50 |$    10|=   40|		|
-		 * |-------|-------|------|------|
-		 * |+   120|       |      |      |
-		 * |-------|-------|------|------|
-		 * |%   300|       |      |      |
-		 * |-------|-------|------|------|
-		 * |       |       |      |      |
-		 * |-------|-------|------|------|
-		 * |       |       |      |      |
-		 * --------|-------|------|------|
-		 *
-		 */
-		// current index in player inventory
-
 		int ci = 0;
 		// draw first top bar
 		mvaddstr(relI, relJ, "---------------------------------");
@@ -182,7 +166,7 @@ class Player {
 			for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
 				// draw the character look of the item and amount
 				mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
-						(string(1, inventory[ci].look) + "  " + to_string(inventory[ci].amount)).c_str()); 
+						(string(1, inventory[ci].look) + "   " + to_string(inventory[ci].amount)).c_str()); 
 				ci ++;
 			}
 		}
@@ -278,7 +262,7 @@ int main() {
 		if (isTalking) {
 			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
 		}
-		player.dispInventory(0, camWid + 20);
+		if (viewInventory) player.dispInventory(0, camWid + 20);
 		// uploads drawing onto terminal
 		refresh();
 		int inp = getch();
@@ -325,6 +309,8 @@ int main() {
 			else if (inp == KEY_RIGHT) player.faceI = 0, player.faceJ = 1;
 			// action depending on the player's facing. can be collecting resources or attacking
 			else if (inp == ' ') player.act();
+			// turn viewing inventory on and off
+			else if (inp == 'e') viewInventory = !viewInventory;
 		}
 	}
 	endwin();

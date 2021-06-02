@@ -30,14 +30,14 @@ development plan:
 -npc class
 	-name, dialogue triggers when acted upon
 	-dialogue system 
+		-dialogue class with member variables string, trigger lambda function
 		-disables usual key presses when isTalking is true
 			-all input is routed with conditional
-		-vector of {string, lambda}
-			-linear progression by pressing 'enter'
-				-confirmation of quest is pressing 'enter'
-				-player can exit at any time with 'backspace'
-			-string is the dialogue description
-			-the lambda can give the player a quest
+		-linear progression by pressing 'enter'
+			-confirmation of quest is pressing 'enter'
+			-player can exit at any time with 'backspace'
+		-string is the dialogue description
+		-the lambda can give the player a quest
 
 -accept quests from npc
 
