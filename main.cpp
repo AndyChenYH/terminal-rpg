@@ -1,4 +1,8 @@
-#include <bits/stdc++.h>
+#include <algorithm>
+#include "../../utils.cpp"
+#include <fstream>
+#include <vector>
+#include <map>
 #include <ncurses.h>
 #include <unistd.h>
 using namespace std;
@@ -18,6 +22,19 @@ vector<string> loadImage(string fil) {
 	string ln;
 	while (getline(fin, ln)) {
 		res.push_back(ln);
+	}
+	return res;
+}
+// similar to loadimage, except reads AML(andy's markup language) and strips white spaces
+vector<string> loadAML(string fil) {
+	ifstream fin(fil);
+	vector<string> res;
+	string ln;
+	while (getline(fin, ln)) {
+		ln = trimWhite(ln);
+		if (ln != "") {
+			res.push_back(ln);
+		}
 	}
 	return res;
 }
@@ -65,6 +82,7 @@ class Item {
 	Item(string name, char type, char look) : name(name), type(type), look(look) { }
 };
 // preset items mapped from item names
+// allows reference to items just by name
 map<string, Item> items;
 // single dialogue/text box popup
 class Dialogue {
@@ -103,12 +121,13 @@ class Map {
 	map<pair<int, int>, pair<Item, int>> resources;
 	// coordinates of NPCs
 	map<pair<int, int>, NPC> npcs;
+	Map() {}
 	// read map from file
 	// html-style enclosure
 	// make sure there are no extra spaces
 	Map(string file) {
-		// loading file data as a bunch of lines (using loadImage function for convience)
-		vector<string> img = loadImage(file);
+		// loading file data as a bunch of lines (using loadAML function for convience)
+		vector<string> img = loadAML(file);
 		// current line in the file
 		int i = 0;
 		// function to load basic look
@@ -136,12 +155,46 @@ class Map {
 				}
 			}
 		};
+		auto ress = [&] () -> void {
+			i ++;
+			auto res = [&] () -> pair<pair<int, int>, pair<Item, int>> {
+				i ++;
+				pair<pair<int, int>, pair<Item, int>> ret;
+				ret.second.second = 0;
+				for ( ; img[i] != "</resource>"; i ++) {
+					if (img[i] == "<coord>") {
+						i ++;
+						ret.first.first = img[i][0] - '0';
+						i ++;
+						ret.first.second = img[i][0] - '0';
+					}
+					else if (img[i] == "<item>") {
+						i ++;
+						print "##", img[i];
+						ret.second.first = items[img[i]];
+					}
+				}
+				return ret;
+			};
+			// looping through all resources
+			for ( ; img[i] != "</resources>"; i ++) {
+				// single resource instance
+				if (img[i] == "<resource>") {
+					// read the single object and add it to map's resources
+					resources.insert(res());
+				}
+			}
+		};
+		// img[i] is a line in the file
 		for ( ; i < (int) img.size(); i ++) {
 			if (img[i] == "<basicLook>") {
 				basicLook();
 			}
 			else if (img[i] == "<passability>") {
 				passability();
+			}
+			else if (img[i] == "<resources>") {
+				ress();
 			}
 		}
 		
@@ -154,10 +207,9 @@ class Map {
 	}
 };
 
-Map world("assets/worldMap.txt");
-Map inn("cozy inn", 10, 10);
+Map world;
 // current map
-Map *curMap = &world;
+Map *curMap;
 NPC *curNPC;
 // should be even numbers
 const int camHei = 40, camWid = 40;
@@ -248,8 +300,8 @@ class Player {
 		drawImage(0, camWid + 20, hotbarBox);
 		// draw items within outline
 		for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
-				mvaddstr(1 + relI, 1 + relJ + jj * 8, 
-						(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
+			mvaddstr(1 + relI, 1 + relJ + jj * 8, 
+				(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
 
 		}
 	}
@@ -271,10 +323,9 @@ class Player {
 		}
 	}
 };
-Item rose("rose", 'r', '&'), gold("gold", 'r', 'G'), honey("honey", 'r', '+'), cactus("cactus", 'r', '}');
 // load a bunch of preset items from assets/items.txt
 void loadItems() {
-	vector<string> img = loadImage("assets/items.txt");
+	vector<string> img = loadAML("assets/items.txt");
 	int i = 0;
 	Item it;
 	for ( ; i < (int) img.size(); i ++) {
@@ -283,7 +334,6 @@ void loadItems() {
 		}
 		else if (img[i] == "</item>") {
 			items.insert({it.name, it});
-			print it.name, it.type, it.look;
 		}
 		else if (img[i] == "<name>") {
 			it.name = img[i + 1];
@@ -298,8 +348,12 @@ void loadItems() {
 }
 Player player(5, 5);
 void testCode() {
+	world = Map("assets/worldMap.txt");
+	curMap = &world;
 	player.addItem(items["rose"]);
-	world.ports.insert({{10, 10}, {&inn, 3, 3}});
+	for (pair<string, Item> p : items) {
+		print "$", p.first, p.second.name, p.second.type, p.second.look;
+	}
 }
 int main() {
 	initscr();
@@ -308,10 +362,6 @@ int main() {
 	nodelay(stdscr, TRUE);
 	keypad(stdscr, TRUE);
 	noecho();
-	start_color();
-	init_pair(1, COLOR_WHITE, COLOR_BLACK);
-	init_pair(2, COLOR_CYAN, COLOR_BLACK);
-	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
 
 	// loading preset items from txt file
 	loadItems();
@@ -344,9 +394,7 @@ int main() {
 					auto fNPC = curMap->npcs.find({ci, cj});
 					if (fPort != curMap->ports.end()) {
 						// make sure ports and resource node aren't on the same block
-						attron(COLOR_PAIR(1));
 						mvaddch(i, j, '^');
-						attroff(COLOR_PAIR(1));
 					}
 					// draw resource node if it exists in this block
 					else if (fResource != curMap->resources.end()) {

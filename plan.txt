@@ -28,7 +28,7 @@ development plan:
 	-read in map from txt file
 		*including look, and passibility in matrix format
 		*use HTML style <> </> tags with nested functions
-		-read in resource nodes from map
+		*read in resource nodes from map
 		-read in portals 
 		-read in NPC
 		-

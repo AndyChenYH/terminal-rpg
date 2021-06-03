@@ -1,47 +1,47 @@
 <item>
-<name>
-rose
-</name>
-<type>
-r
-</type>
-<look>
-&
-</look>
+	<name>
+		rose
+	</name>
+	<type>
+		r
+	</type>
+	<look>
+		&
+	</look>
 </item>
 
 <item>
-<name>
-gold
-</name>
-<type>
-r
-</type>
-<look>
-&
-</look>
+	<name>
+		gold
+	</name>
+	<type>
+		r
+	</type>
+	<look>
+		&
+	</look>
 </item>
 
 <item>
-<name>
-honey
-</name>
-<type>
-r
-</type>
-<look>
-+
-</look>
+	<name>
+		honey
+	</name>
+	<type>
+		r
+	</type>
+	<look>
+		+
+	</look>
 </item>
 
 <item>
-<name>
-cactus
-</name>
-<type>
-r
-</type>
-<look>
-}
-</look>
+	<name>
+		cactus
+	</name>
+	<type>
+		r
+	</type>
+	<look>
+		}
+	</look>
 </item>

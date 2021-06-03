@@ -1,4 +1,6 @@
-rose r &
-gold r &
-honey r +
-cactus r }
+## rose
+## cactus
+$ cactus cactus r }
+$ gold gold r &
+$ honey honey r +
+$ rose rose r &
