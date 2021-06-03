@@ -130,78 +130,74 @@ class Map {
 		vector<string> img = loadAML(file);
 		// current line in the file
 		int i = 0;
-		// function to load basic look
-		// also initializes size of map (row and column)
-		auto basicLook = [&] () -> void {
-			i ++;
-			row = 0, col = img[i].size();
-			for ( ; img[i] != "</basicLook>"; i ++) {
-				// add new row to map data
-				data.push_back(vector<Block>(col));
-				for (int j = 0; j < col; j ++) {
-					data[row][j].look = img[i][j];
-				}
-				row ++;
-			}
-		};
-		// function to read in passability
-		auto passability = [&] () -> void {
-			i ++;
-			// simple nested for loop to read in passibility
-			// i is index within img, ii is index within data
-			for (int ii = 0; ii < row; ii ++, i ++) {
-				for (int j = 0; j < col; j ++) {
-					data[ii][j].pass = img[i][j] == '0' ? true : false;
-				}
-			}
-		};
-		auto ress = [&] () -> void {
-			i ++;
-			auto res = [&] () -> pair<pair<int, int>, pair<Item, int>> {
-				i ++;
-				pair<pair<int, int>, pair<Item, int>> ret;
-				ret.second.second = 0;
-				for ( ; img[i] != "</resource>"; i ++) {
-					if (img[i] == "<coord>") {
-						i ++;
-						ret.first.first = img[i][0] - '0';
-						i ++;
-						ret.first.second = img[i][0] - '0';
-					}
-					else if (img[i] == "<item>") {
-						i ++;
-						print "##", img[i];
-						ret.second.first = items[img[i]];
-					}
-				}
-				return ret;
-			};
-			// looping through all resources
-			for ( ; img[i] != "</resources>"; i ++) {
-				// single resource instance
-				if (img[i] == "<resource>") {
-					// read the single object and add it to map's resources
-					resources.insert(res());
-				}
-			}
-		};
 		// img[i] is a line in the file
 		for ( ; i < (int) img.size(); i ++) {
+			// load basic look
+			// also initializes size of map (row and column)
 			if (img[i] == "<basicLook>") {
-				basicLook();
+				i ++;
+				row = 0, col = img[i].size();
+				for ( ; img[i] != "</basicLook>"; i ++) {
+					// add new row to map data
+					data.push_back(vector<Block>(col));
+					for (int j = 0; j < col; j ++) {
+						data[row][j].look = img[i][j];
+					}
+					row ++;
+				}
 			}
 			else if (img[i] == "<passability>") {
-				passability();
+				// read in passability
+				i ++;
+				// simple nested for loop to read in passibility
+				// i is index within img, ii is index within data
+				for (int ii = 0; ii < row; ii ++, i ++) {
+					for (int j = 0; j < col; j ++) {
+						data[ii][j].pass = img[i][j] == '0' ? true : false;
+					}
+				}
 			}
 			else if (img[i] == "<resources>") {
-				ress();
+				i ++;
+				// looping through all resources
+				for ( ; img[i] != "</resources>"; i ++) {
+					// single resource instance
+					if (img[i] == "<resource>") {
+						// read the single object and add it to map's resources
+						i ++;
+						// set up the <coord, <item, regrowTime>> to be modified & returned
+						pair<pair<int, int>, pair<Item, int>> res;
+						// set the default regrowtime to 0
+						res.second.second = 0;
+						// read until end of resource tag
+						for ( ; img[i] != "</resource>"; i ++) {
+							// read in coordinates on two lines
+							if (img[i] == "<coord>") {
+								i ++;
+								res.first.first = img[i][0] - '0';
+								i ++;
+								res.first.second = img[i][0] - '0';
+							}
+							// read in item name
+							// which can be referenced with the "items" treemap to get an Item object
+							else if (img[i] == "<item>") {
+								i ++;
+								res.second.first = items[img[i]];
+							}
+						}
+						// put the resource node with all the assembled information into the list
+						resources.insert(res);
+					}
+				}
 			}
 		}
 		
 	}
+	// basic map initialization
 	Map(string description, int row, int col) : description(description), row(row), col(col) {
 		data = vector<vector<Block>>(row, vector<Block>(col));
 	}
+	// check if is in the bound of the map
 	bool inBound(int i, int j) {
 		return 0 <= i && i < row && 0 <= j && j < col;
 	}
@@ -302,7 +298,6 @@ class Player {
 		for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
 			mvaddstr(1 + relI, 1 + relJ + jj * 8, 
 				(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
-
 		}
 	}
 	// relative coordinates to allow easy translation of object
@@ -329,21 +324,11 @@ void loadItems() {
 	int i = 0;
 	Item it;
 	for ( ; i < (int) img.size(); i ++) {
-		if (img[i] == "<item>") {
-			it = Item();
-		}
-		else if (img[i] == "</item>") {
-			items.insert({it.name, it});
-		}
-		else if (img[i] == "<name>") {
-			it.name = img[i + 1];
-		}
-		else if (img[i] == "<type>") {
-			it.type = img[i + 1][0];
-		}
-		else if (img[i] == "<look>") {
-			it.look = img[i + 1][0];
-		}
+		if (img[i] == "<item>") { it = Item(); }
+		else if (img[i] == "</item>") { items.insert({it.name, it}); }
+		else if (img[i] == "<name>") { it.name = img[i + 1]; }
+		else if (img[i] == "<type>") { it.type = img[i + 1][0]; }
+		else if (img[i] == "<look>") { it.look = img[i + 1][0]; }
 	}
 }
 Player player(5, 5);

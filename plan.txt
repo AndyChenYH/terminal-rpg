@@ -17,6 +17,10 @@ game storyline:
 	unconscious is the tutorial; teaches player how to craft
 -load image from txt file & draw
 
+file reading:
+	-will use map<string name, Object> to map to in-code objects referenced in files
+		-for example, mp["NPCJoe"] would map to an NPC called joe
+		-allows file to reference things using string
 
 
 development plan:
@@ -29,9 +33,11 @@ development plan:
 		*including look, and passibility in matrix format
 		*use HTML style <> </> tags with nested functions
 		*read in resource nodes from map
+
 		-read in portals 
 		-read in NPC
 		-
+-refactor file reading: without the use of lambdas
 
 *npc class
 	*name, dialogue triggers when acted upon

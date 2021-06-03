@@ -1,5 +1,3 @@
-## rose
-## cactus
 $ cactus cactus r }
 $ gold gold r &
 $ honey honey r +
