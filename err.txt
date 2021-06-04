@@ -1,20 +1,17 @@
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/vector:1549:12: runtime error: reference binding to null pointer of type 'Item'
-SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/vector:1549:12 in 
 AddressSanitizer:DEADLYSIGNAL
 =================================================================
-==5369==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000020 (pc 0x000105b48561 bp 0x7ffeea0c0050 sp 0x7ffeea0bff20 T0)
-==5369==The signal is caused by a READ memory access.
-==5369==Hint: address points to the zero page.
-    #0 0x105b48561 in Player::dispInventory(int, int) main.cpp:177
-    #1 0x105b453d7 in main main.cpp:271
-    #2 0x7fff20499620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
+==55678==ERROR: AddressSanitizer: BUS on unknown address 0x6110574b17e0 (pc 0x000101146959 bp 0x7ffeeeaf4790 sp 0x7ffeeeaf4780 T0)
+    #0 0x101146959 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__is_long() const string:1420
+    #1 0x101146786 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::data() const string:1242
+    #2 0x101113964 in main main.cpp:468
+    #3 0x7fff20499620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
 
-==5369==Register values:
-rax = 0x0000000000000000  rbx = 0x00007ffeea0bff80  rcx = 0x0000100000000000  rdx = 0x000000000000003f  
-rdi = 0x0000000000000000  rsi = 0x00000001068ddda0  rbp = 0x00007ffeea0c0050  rsp = 0x00007ffeea0bff20  
- r8 = 0x0000000105deb640   r9 = 0x00007ffeea0bf1c0  r10 = 0x0000000000000000  r11 = 0x0000000000000206  
-r12 = 0x0000611000000540  r13 = 0x0000000000000020  r14 = 0x0000000000000028  r15 = 0x0000000000000000  
+==55678==Register values:
+rax = 0x00000c220ae96200  rbx = 0x00006110574b17e0  rcx = 0x00001c220ae962fc  rdx = 0x00006110574b17e0  
+rdi = 0x00006110574b17e0  rsi = 0x00000000011756a2  rbp = 0x00007ffeeeaf4790  rsp = 0x00007ffeeeaf4780  
+ r8 = 0x0000000000000028   r9 = 0x0000000000000068  r10 = 0x0000615000000a80  r11 = 0x00000000000001c0  
+r12 = 0x00006110574b17e0  r13 = 0x00006080000003e8  r14 = 0x00006110574b17e0  r15 = 0x00001fffddd5e91a  
 AddressSanitizer can not provide additional info.
-SUMMARY: AddressSanitizer: SEGV main.cpp:177 in Player::dispInventory(int, int)
-==5369==ABORTING
-/Users/andychen/Coding/bashFiles/runNcurses.sh: line 6:  5369 Abort trap: 6           ./a.out
+SUMMARY: AddressSanitizer: BUS string:1420 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__is_long() const
+==55678==ABORTING
+/Users/andychen/Coding/bashFiles/runNcurses.sh: line 6: 55678 Abort trap: 6           ./a.out

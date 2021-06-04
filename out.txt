@@ -1,4 +1,0 @@
-$ cactus cactus r }
-$ gold gold r &
-$ honey honey r +
-$ rose rose r &

@@ -43,4 +43,34 @@
 	</resource>
 </resources>
 
+<npcs>
+	<npc>
+		<coord>
+			7
+			9
+		</coord>
+		<name>
+			John
+		</name>
+		<dialogues>
+			<dialogue>
+				<words>
+					hello fellow adventurer
+				</words>
+			</dialogue>
+			<dialogue>
+				<words>
+					welcome to hell
+				</words>
+			</dialogue>
+			<dialogue>
+				<words>
+					can you get me 2 roses?
+				</words>
+			</dialogue>
+		</dialogues>
+	</npc>
+
+</npcs>
+
 

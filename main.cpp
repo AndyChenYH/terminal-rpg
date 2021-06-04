@@ -1,8 +1,5 @@
-#include <algorithm>
+#include <bits/stdc++.h>
 #include "../../utils.cpp"
-#include <fstream>
-#include <vector>
-#include <map>
 #include <ncurses.h>
 #include <unistd.h>
 using namespace std;
@@ -36,6 +33,27 @@ vector<string> loadAML(string fil) {
 			res.push_back(ln);
 		}
 	}
+	// check if the tags in the AML file matchs
+	list<string> st;
+	for (string s : res) {
+		if (!(s[0] == '<' && s[int(s.size()) - 1] == '>')) continue;
+		if (s[1] == '/') {
+			string tmp(s.begin(), s.end());
+			tmp.erase(tmp.begin() + 1);
+			if (st.empty() || tmp != st.back()) {
+				endwin();
+				cout << "AML file mismatch: " << s << endl;
+				exit(0);
+			}
+			st.pop_back();
+		}
+		else st.push_back(s);
+	}
+	if (!st.empty()) {
+		endwin();
+		cout << "AML file mismatch: " << st.back() << endl;
+		exit(0);
+	}
 	return res;
 }
 // draws image onto screen with top left corner at (relI, relJ)
@@ -51,7 +69,9 @@ vector<string> inventoryBox = loadImage("assets/inventoryBox.txt");
 
 // should take more than a year to overflow integer size limit
 int frame = 0;
+// is player talking to npc?
 bool isTalking = false;
+// is player looking at inventory?
 bool viewInventory = false;
 
 // forward declarations
@@ -92,6 +112,8 @@ class Dialogue {
 	// when this dialogue is passed, modifies the player such as giving them a quest or items
 	// return true if dialogue is allowed to advance (eg: player has met a certain condition)
 	function<bool(Player*)> trigger;
+	// empty constructor 
+	Dialogue() {}
 	// by default, there's no trigger, since most dialogues are simply text/storytelling
 	Dialogue(string words) : words(words), hasTrigger(false) { }
 	// dialogue with trigger function (must return true to proceed and can modify player)
@@ -102,6 +124,7 @@ class NPC {
 	public:
 	string name;
 	int diaNum;
+	NPC() {}
 	// linear dialogue consisting of words, and a function that runs when player presses enter
 	// can do things such as give player items or quests
 	vector<Dialogue> dialogues;
@@ -146,8 +169,52 @@ class Map {
 					row ++;
 				}
 			}
+			// read in list npcs
+			else if (img[i] == "<npcs>") {
+				// coordinate of npc on map, used as key in treemap
+				pair<int, int> coord;
+				for ( ; img[i] != "</npcs>"; i ++) {
+					// read in single npc
+					if (img[i] == "<npc>") {
+						// npc object for assembling and adding to list of npcs
+						NPC npc;
+						// the dialog number always starts at 0
+						npc.diaNum = 0;
+						for ( ; img[i] != "</npc>"; i ++) {
+							// read in npc coordinates x, y in two lines
+							if (img[i] == "<coord>") {
+								// change the integers into string and put them in coordinate pair
+								int x = stoi(img[i + 1]), y = stoi(img[i + 2]);
+								coord = {x, y};
+							}
+							else if (img[i] == "<name>") {
+								npc.name = img[i + 1];
+							}
+							// read in list of dialogues
+							else if (img[i] == "<dialogues>") {
+								for ( ; img[i] != "</dialogues>"; i ++) {
+									// starting tag of single dialogue
+									if (img[i] == "<dialogue>") {
+										// dialogue object to eventually assemble and add to list of dialogues
+										Dialogue dialogue;
+										// unless reads in trigger function later, false by default
+										dialogue.hasTrigger = false;
+										for ( ; img[i] != "</dialogue>"; i ++) {
+											if (img[i] == "<words>") {
+												dialogue.words = img[i + 1];
+											}
+										}
+										npc.dialogues.push_back(dialogue);
+									}
+								}
+							}
+						}
+						npcs.insert({coord, npc});
+					}
+				}
+			}
+			// read in passability
 			else if (img[i] == "<passability>") {
-				// read in passability
 				i ++;
 				// simple nested for loop to read in passibility
 				// i is index within img, ii is index within data
@@ -174,9 +241,9 @@ class Map {
 							// read in coordinates on two lines
 							if (img[i] == "<coord>") {
 								i ++;
-								res.first.first = img[i][0] - '0';
+								res.first.first = stoi(img[i]);
 								i ++;
-								res.first.second = img[i][0] - '0';
+								res.first.second = stoi(img[i]);
 							}
 							// read in item name
 							// which can be referenced with the "items" treemap to get an Item object
@@ -206,6 +273,7 @@ class Map {
 Map world;
 // current map
 Map *curMap;
+// current NPC the player is talking to
 NPC *curNPC;
 // should be even numbers
 const int camHei = 40, camWid = 40;
@@ -321,11 +389,15 @@ class Player {
 // load a bunch of preset items from assets/items.txt
 void loadItems() {
 	vector<string> img = loadAML("assets/items.txt");
+	// which line in the file
 	int i = 0;
 	Item it;
 	for ( ; i < (int) img.size(); i ++) {
+		// start of items object tag
 		if (img[i] == "<item>") { it = Item(); }
+		// if end of item tag, put the assembled item into the "items" treemap
 		else if (img[i] == "</item>") { items.insert({it.name, it}); }
+		// reading in other item attributes
 		else if (img[i] == "<name>") { it.name = img[i + 1]; }
 		else if (img[i] == "<type>") { it.type = img[i + 1][0]; }
 		else if (img[i] == "<look>") { it.look = img[i + 1][0]; }
@@ -335,10 +407,6 @@ Player player(5, 5);
 void testCode() {
 	world = Map("assets/worldMap.txt");
 	curMap = &world;
-	player.addItem(items["rose"]);
-	for (pair<string, Item> p : items) {
-		print "$", p.first, p.second.name, p.second.type, p.second.look;
-	}
 }
 int main() {
 	initscr();
