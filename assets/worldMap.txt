@@ -74,7 +74,7 @@
 					<data>
 						rose
 						2
-						gold
+						NONE
 						3
 					</data>
 				</trigger>

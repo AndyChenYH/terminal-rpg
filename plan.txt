@@ -19,8 +19,8 @@ game storyline:
 
 file reading:
 	-will use map<string name, Object> to map to in-code objects referenced in files
-		-for example, mp["NPCJoe"] would map to an NPC called joe
-		-allows file to reference things using string
+		*for example, mp["NPCJoe"] would map to an NPC called joe
+		*allows file to reference things using string
 
 
 development plan:
@@ -35,11 +35,12 @@ development plan:
 		*read in resource nodes from map
 
 		-read in portals 
-		-read in NPC
-			-read in dialogue triggers
-			-generate lambda function inline
-			-can give or receive NONE; make sure to check with conditional
-			-can only give or receive one type of item
+		*read in NPC
+			*read in dialogue triggers
+			*generate lambda function inline
+			*can give or receive NONE; make sure to check with conditional
+			*can only give or receive one type of item
+				*if you want multiple items...do it in another dialogue
 
 
 -refactor file reading: without the use of lambdas

@@ -194,23 +194,29 @@ class Map {
 												dialogue.words = img[i + 1];
 											}
 											else if (img[i] == "<trigger>") {
+												// if sees trigger tag, mean that the dialogue has trigger function
 												dialogue.hasTrigger = true;
+												// type of trigger: choose from pre-set
 												string type = "";
 												for ( ; img[i] != "</trigger>"; i ++) {
-													// a trade between player and NPC
 													if (img[i] == "<type>") {
 														type = img[i + 1];
 													}
 													else if (img[i] == "<data>") {
-														assert(type != "");
+														// a trade between player and NPC
 														if (type == "trade") {
 															// 1 is give to npc, 2 is receive from npc
 															string item1 = img[i + 1], item2 = img[i + 3];
+															// read in the give and receive amounts
+															// use NONE to denote giving or receiving nothing
 															int amount1 = stoi(img[i + 2]), amount2 = stoi(img[i + 4]);
+															// have to use capture-by-value because the variables would go outside of scope
 															dialogue.trigger = [=] (Player *pl) -> bool {
-																bool res = pl->takeItem(items[item1], amount1);
-																if (res) pl->addItem(items[item2], amount2);
-																print "res: ", res;
+																// takeItem returns true if item taken successfully
+																bool res = item1 == "NONE" ? true : pl->takeItem(items[item1], amount1);
+																// if successfully took item, player can now receive reward
+																if (res && item2 != "NONE") pl->addItem(items[item2], amount2);
+																// the returned value is used to determine whether dialogue can advance
 																return res;
 															};
 
