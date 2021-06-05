@@ -1,7 +1,2 @@
-main.cpp:505:62: fatal error: expected ')'
-                                                if (curNPC->dialogues[curNPC->diaNum].trigger(&player) {
-                                                                                                       ^
-main.cpp:505:10: note: to match this '('
-                                                if (curNPC->dialogues[curNPC->diaNum].trigger(&player) {
-                                                   ^
-1 error generated.
+libc++abi.dylib: terminating with uncaught exception of type std::out_of_range: map::at:  key not found
+/Users/andychen/Coding/bashFiles/runNcurses.sh: line 6: 20116 Abort trap: 6           ./a.out

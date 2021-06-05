@@ -1,14 +1,11 @@
-#include <stdio.h>
-#include <functional>
+#include <bits/stdc++.h>
+#include "../../utils.cpp"
+#include "main.h"
+#include <ncurses.h>
+#include <unistd.h>
 using namespace std;
 
-function<int(int)> lam;
-
-void func() {
-	int a = 5;
-	lam = [=] (int b) -> int {
-		return a + b;
-	};
+class Enemey {
 }
 
 int main() {

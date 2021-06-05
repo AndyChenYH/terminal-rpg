@@ -75,17 +75,13 @@ bool isTalking = false;
 // is player looking at inventory?
 bool viewInventory = false;
 
-class Block {
-	public:
-	bool pass;
-	char look;
-	Block() {
-		pass = true;
-		look = '.';
-	}
-	Block(bool pass, char look) : pass(pass), look(look) {
-	}
-};
+Block::Block() {
+	pass = true;
+	look = '.';
+}
+Block::Block(bool pass, char look) : pass(pass), look(look) {
+}
+
 Item::Item() {}
 // resource initialization
 Item::Item(string name, char type, char look) : name(name), type(type), look(look) { }
@@ -93,205 +89,207 @@ Item::Item(string name, char type, char look) : name(name), type(type), look(loo
 // preset items mapped from item names
 // allows reference to items just by name
 map<string, Item> items;
-// single dialogue/text box popup
-class Dialogue {
-	public:
-	string words;
-	bool hasTrigger;
-	// when this dialogue is passed, modifies the player such as giving them a quest or items
-	// return true if dialogue is allowed to advance (eg: player has met a certain condition)
-	function<bool(Player*)> trigger;
-	// empty constructor 
-	Dialogue() {}
-	// by default, there's no trigger, since most dialogues are simply text/storytelling
-	Dialogue(string words) : words(words), hasTrigger(false) { }
-	// dialogue with trigger function (must return true to proceed and can modify player)
-	Dialogue(string words, function<bool(Player*)> trigger) 
-		: words(words), hasTrigger(true), trigger(trigger) {}
-};
-class NPC {
-	public:
-	string name;
-	int diaNum;
-	NPC() {}
-	// linear dialogue consisting of words, and a function that runs when player presses enter
-	// can do things such as give player items or quests
-	vector<Dialogue> dialogues;
-	NPC(string name, vector<Dialogue> dialogues) 
-		: name(name), diaNum(0), dialogues(dialogues) { }
-};
+
+// empty constructor 
+Dialogue::Dialogue() {}
+// by default, there's no trigger, since most dialogues are simply text/storytelling
+Dialogue::Dialogue(string words) : words(words), hasTrigger(false) { }
+// dialogue with trigger function (must return true to proceed and can modify player)
+Dialogue::Dialogue(string words, function<bool(Player*)> trigger) 
+	: words(words), hasTrigger(true), trigger(trigger) {}
+
+NPC::NPC(string name, vector<Dialogue> dialogues) 
+	: name(name), diaNum(0), dialogues(dialogues) { }
+
+// treemap to allow referencing maps by their names
+map<string, Map> maps;
+
 // initializing map first so portal can use it
-class Map {
-	public:
-	string description;
-	int row, col;
-	// map data
-	vector<vector<Block>> data;
-	// portals translates current map's coordinates to another map's coordinates
-	map<pair<int, int>, tuple<Map*, int, int>> ports;
-	// coordinates of resource nodes, mapped to Item and their regrow times
-	map<pair<int, int>, pair<Item, int>> resources;
-	// coordinates of NPCs
-	map<pair<int, int>, NPC> npcs;
-	Map() {}
-	// read map from file
-	// html-style enclosure
-	// make sure there are no extra spaces
-	Map(string file) {
-		// loading file data as a bunch of lines (using loadAML function for convience)
-		vector<string> img = loadAML(file);
-		// current line in the file
-		int i = 0;
-		// img[i] is a line in the file
-		for ( ; i < (int) img.size(); i ++) {
-			// load basic look
-			// also initializes size of map (row and column)
-			if (img[i] == "<basicLook>") {
-				i ++;
-				row = 0, col = img[i].size();
-				for ( ; img[i] != "</basicLook>"; i ++) {
-					// add new row to map data
-					data.push_back(vector<Block>(col));
-					for (int j = 0; j < col; j ++) {
-						data[row][j].look = img[i][j];
+Map::Map() {}
+// read map from file
+// html-style enclosure
+// make sure there are no extra spaces
+Map::Map(string file) {
+	// loading file data as a bunch of lines (using loadAML function for convience)
+	vector<string> img = loadAML(file);
+	// current line in the file
+	int i = 0;
+	// img[i] is a line in the file
+	for ( ; i < (int) img.size(); i ++) {
+		// load basic look
+		// also initializes size of map (row and column)
+		if (img[i] == "<basicLook>") {
+			i ++;
+			row = 0, col = img[i].size();
+			for ( ; img[i] != "</basicLook>"; i ++) {
+				// add new row to map data
+				data.push_back(vector<Block>(col));
+				for (int j = 0; j < col; j ++) {
+					data[row][j].look = img[i][j];
+				}
+				row ++;
+			}
+		}
+		// read in list of portals
+		else if (img[i] == "<portals>") {
+			for ( ; img[i] != "</portals>"; i ++) {
+				// read in singular portal
+				if (img[i] == "<portal>") {
+					pair<int, int> coord1, coord2;
+					string mapTo;
+					for ( ; img[i] != "</portal>"; i ++) {
+						if (img[i] == "<coord1>") {
+							coord1 = {stoi(img[i + 1]), stoi(img[i + 2])};
+						}
+						else if (img[i] == "<coord2>") {
+							coord2 = {stoi(img[i + 1]), stoi(img[i + 2])};
+						}
+						else if (img[i] == "<mapTo>") {
+							mapTo = img[i + 1];
+						}
 					}
-					row ++;
+					ports.insert({coord1, {mapTo, coord2.first, coord2.second}});
 				}
 			}
-			// read in list npcs
-			else if (img[i] == "<npcs>") {
-				// coordinate of npc on map, used as key in treemap
-				pair<int, int> coord;
-				for ( ; img[i] != "</npcs>"; i ++) {
-					// read in single npc
-					if (img[i] == "<npc>") {
-						// npc object for assembling and adding to list of npcs
-						NPC npc;
-						// the dialog number always starts at 0
-						npc.diaNum = 0;
-						for ( ; img[i] != "</npc>"; i ++) {
-							// read in npc coordinates x, y in two lines
-							if (img[i] == "<coord>") {
-								// change the integers into string and put them in coordinate pair
-								int x = stoi(img[i + 1]), y = stoi(img[i + 2]);
-								coord = {x, y};
-							}
-							else if (img[i] == "<name>") {
-								npc.name = img[i + 1];
-							}
-							// read in list of dialogues
-							else if (img[i] == "<dialogues>") {
-								for ( ; img[i] != "</dialogues>"; i ++) {
-									// starting tag of single dialogue
-									if (img[i] == "<dialogue>") {
-										// dialogue object to eventually assemble and add to list of dialogues
-										Dialogue dialogue;
-										// unless reads in trigger function later, false by default
-										dialogue.hasTrigger = false;
-										// loop until the end of current singular dialogue
-										for ( ; img[i] != "</dialogue>"; i ++) {
-											if (img[i] == "<words>") {
-												dialogue.words = img[i + 1];
-											}
-											else if (img[i] == "<trigger>") {
-												// if sees trigger tag, mean that the dialogue has trigger function
-												dialogue.hasTrigger = true;
-												// type of trigger: choose from pre-set
-												string type = "";
-												for ( ; img[i] != "</trigger>"; i ++) {
-													if (img[i] == "<type>") {
-														type = img[i + 1];
-													}
-													else if (img[i] == "<data>") {
-														// a trade between player and NPC
-														if (type == "trade") {
-															// 1 is give to npc, 2 is receive from npc
-															string item1 = img[i + 1], item2 = img[i + 3];
-															// read in the give and receive amounts
-															// use NONE to denote giving or receiving nothing
-															int amount1 = stoi(img[i + 2]), amount2 = stoi(img[i + 4]);
-															// have to use capture-by-value because the variables would go outside of scope
-															dialogue.trigger = [=] (Player *pl) -> bool {
-																// takeItem returns true if item taken successfully
-																bool res = item1 == "NONE" ? true : pl->takeItem(items[item1], amount1);
-																// if successfully took item, player can now receive reward
-																if (res && item2 != "NONE") pl->addItem(items[item2], amount2);
-																// the returned value is used to determine whether dialogue can advance
-																return res;
-															};
+		}
+		// read in list npcs
+		else if (img[i] == "<npcs>") {
+			// coordinate of npc on map, used as key in treemap
+			pair<int, int> coord;
+			for ( ; img[i] != "</npcs>"; i ++) {
+				// read in single npc
+				if (img[i] == "<npc>") {
+					// npc object for assembling and adding to list of npcs
+					NPC npc;
+					// the dialog number always starts at 0
+					npc.diaNum = 0;
+					for ( ; img[i] != "</npc>"; i ++) {
+						// read in npc coordinates x, y in two lines
+						if (img[i] == "<coord>") {
+							// change the integers into string and put them in coordinate pair
+							int x = stoi(img[i + 1]), y = stoi(img[i + 2]);
+							coord = {x, y};
+						}
+						else if (img[i] == "<name>") {
+							npc.name = img[i + 1];
+						}
+						// read in list of dialogues
+						else if (img[i] == "<dialogues>") {
+							for ( ; img[i] != "</dialogues>"; i ++) {
+								// starting tag of single dialogue
+								if (img[i] == "<dialogue>") {
+									// dialogue object to eventually assemble and add to list of dialogues
+									Dialogue dialogue;
+									// unless reads in trigger function later, false by default
+									dialogue.hasTrigger = false;
+									// loop until the end of current singular dialogue
+									for ( ; img[i] != "</dialogue>"; i ++) {
+										if (img[i] == "<words>") {
+											dialogue.words = img[i + 1];
+										}
+										else if (img[i] == "<trigger>") {
+											// if sees trigger tag, mean that the dialogue has trigger function
+											dialogue.hasTrigger = true;
+											// type of trigger: choose from pre-set
+											string type = "";
+											for ( ; img[i] != "</trigger>"; i ++) {
+												if (img[i] == "<type>") {
+													type = img[i + 1];
+												}
+												else if (img[i] == "<data>") {
+													// a trade between player and NPC
+													if (type == "trade") {
+														// 1 is give to npc, 2 is receive from npc
+														string item1 = img[i + 1], item2 = img[i + 3];
+														// read in the give and receive amounts
+														// use NONE to denote giving or receiving nothing
+														int amount1 = stoi(img[i + 2]), amount2 = stoi(img[i + 4]);
+														// have to use capture-by-value because the variables would go outside of scope
+														dialogue.trigger = [=] (Player *pl) -> bool {
+															// takeItem returns true if item taken successfully
+															bool res = item1 == "NONE" ? true : pl->takeItem(items[item1], amount1);
+															// if successfully took item, player can now receive reward
+															if (res && item2 != "NONE") pl->addItem(items[item2], amount2);
+															// the returned value is used to determine whether dialogue can advance
+															return res;
+														};
 
-														}
 													}
 												}
 											}
 										}
-										// add assembled dialogue to the list
-										npc.dialogues.push_back(dialogue);
 									}
+									// add assembled dialogue to the list
+									npc.dialogues.push_back(dialogue);
 								}
 							}
 						}
-						// insert assebled npc into the treemap of npcs within the map
-						npcs.insert({coord, npc});
 					}
-				}
-			}
-			// read in passability
-			else if (img[i] == "<passability>") {
-				i ++;
-				// simple nested for loop to read in passibility
-				// i is index within img, ii is index within data
-				for (int ii = 0; ii < row; ii ++, i ++) {
-					for (int j = 0; j < col; j ++) {
-						data[ii][j].pass = img[i][j] == '0' ? true : false;
-					}
-				}
-			}
-			else if (img[i] == "<resources>") {
-				i ++;
-				// looping through all resources
-				for ( ; img[i] != "</resources>"; i ++) {
-					// single resource instance
-					if (img[i] == "<resource>") {
-						// read the single object and add it to map's resources
-						i ++;
-						// set up the <coord, <item, regrowTime>> to be modified & returned
-						pair<pair<int, int>, pair<Item, int>> res;
-						// set the default regrowtime to 0
-						res.second.second = 0;
-						// read until end of resource tag
-						for ( ; img[i] != "</resource>"; i ++) {
-							// read in coordinates on two lines
-							if (img[i] == "<coord>") {
-								res.first.first = stoi(img[i + 1]);
-								res.first.second = stoi(img[i + 2]);
-							}
-							// read in item name
-							// which can be referenced with the "items" treemap to get an Item object
-							else if (img[i] == "<item>") {
-								i ++;
-								res.second.first = items[img[i]];
-							}
-						}
-						// put the resource node with all the assembled information into the list
-						resources.insert(res);
-					}
+					// insert assebled npc into the treemap of npcs within the map
+					npcs.insert({coord, npc});
 				}
 			}
 		}
-		
+		// read in passability
+		else if (img[i] == "<passability>") {
+			i ++;
+			// simple nested for loop to read in passibility
+			// i is index within img, ii is index within data
+			for (int ii = 0; ii < row; ii ++, i ++) {
+				for (int j = 0; j < col; j ++) {
+					data[ii][j].pass = img[i][j] == '0' ? true : false;
+				}
+			}
+		}
+		else if (img[i] == "<resources>") {
+			i ++;
+			// looping through all resources
+			for ( ; img[i] != "</resources>"; i ++) {
+				// single resource instance
+				if (img[i] == "<resource>") {
+					// read the single object and add it to map's resources
+					i ++;
+					// set up the <coord, <item, regrowTime>> to be modified & returned
+					pair<pair<int, int>, pair<Item, int>> res;
+					// set the default regrowtime to 0
+					res.second.second = 0;
+					// read until end of resource tag
+					for ( ; img[i] != "</resource>"; i ++) {
+						// read in coordinates on two lines
+						if (img[i] == "<coord>") {
+							res.first.first = stoi(img[i + 1]);
+							res.first.second = stoi(img[i + 2]);
+						}
+						// read in item name
+						// which can be referenced with the "items" treemap to get an Item object
+						else if (img[i] == "<item>") {
+							i ++;
+							res.second.first = items[img[i]];
+						}
+					}
+					// put the resource node with all the assembled information into the list
+					resources.insert(res);
+				}
+			}
+		}
 	}
-	// basic map initialization
-	Map(string description, int row, int col) : description(description), row(row), col(col) {
-		data = vector<vector<Block>>(row, vector<Block>(col));
-	}
-	// check if is in the bound of the map
-	bool inBound(int i, int j) {
-		return 0 <= i && i < row && 0 <= j && j < col;
-	}
-};
+	
+}
+/*
+// basic map initialization
+Map::Map(string description, int row, int col) : description(description), row(row), col(col) {
+	data = vector<vector<Block>>(row, vector<Block>(col));
+}
+*/
+// check if is in the bound of the map
+bool Map::inBound(int i, int j) {
+	return 0 <= i && i < row && 0 <= j && j < col;
+}
 
-Map world;
+void loadMaps() {
+	maps.insert({"worldMap", Map("assets/worldMap.txt")});
+	maps.insert({"inn", Map("assets/inn.txt")});
+}
 // current map
 Map *curMap;
 // current NPC the player is talking to
@@ -322,7 +320,7 @@ void Player::move(int di, int dj) {
 	auto fid = curMap->ports.find({i, j});
 	if (fid != curMap->ports.end()) {
 		// perform portal teleportation
-		curMap = get<0>(fid->second);
+		curMap = &maps.at(get<0>(fid->second));
 		i = get<1>(fid->second);
 		j = get<2>(fid->second);
 	}
@@ -427,17 +425,9 @@ int main() {
 
 	// loading preset items from txt file
 	loadItems();
+	loadMaps();
 	// testing code that can be deleted later
-	world = Map("assets/worldMap.txt");
-	curMap = &world;
-	/*
-	world.npcs.at({7, 9}).dialogues[2].hasTrigger = true;
-	world.npcs.at({7, 9}).dialogues[2].trigger = [&] (Player *pl) -> bool {
-		bool res = pl->takeItem(items["rose"], 2);
-		if (res) pl->addItem(items["gold"], 3);
-		return res;
-	};
-	*/
+	curMap = &maps.at("worldMap");
 
 	while (true) {
 		// 50 refreshes a second

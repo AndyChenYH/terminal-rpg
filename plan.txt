@@ -35,6 +35,7 @@ development plan:
 		*read in resource nodes from map
 
 		-read in portals 
+			-give map a name to reference in treemap
 		*read in NPC
 			*read in dialogue triggers
 			*generate lambda function inline
