@@ -1,5 +1,4 @@
 #include <bits/stdc++.h>
-#include "../../utils.cpp"
 #include "main.h"
 #include <ncurses.h>
 #include <unistd.h>
@@ -12,6 +11,7 @@ ofstream fout("out.txt");
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
 
+string trimWhite(const string& str, const string& whitespace = " \t") { const auto strBegin = str.find_first_not_of(whitespace); if (strBegin == string::npos) return ""; const auto strEnd = str.find_last_not_of(whitespace); const auto strRange = strEnd - strBegin + 1; return str.substr(strBegin, strRange); }
 
 // loads image from txt file and returns as list of horizontal lines
 vector<string> loadImage(string fil) {
@@ -79,12 +79,11 @@ Block::Block() {
 	pass = true;
 	look = '.';
 }
-Block::Block(bool pass, char look) : pass(pass), look(look) {
-}
+Block::Block(bool pass, char look) : pass(pass), look(look) { }
 
 Item::Item() {}
 // resource initialization
-Item::Item(string name, char type, char look) : name(name), type(type), look(look) { }
+Item::Item(string name, string type, char look) : name(name), type(type), look(look) { }
 
 // preset items mapped from item names
 // allows reference to items just by name
@@ -409,7 +408,7 @@ void loadItems() {
 		else if (img[i] == "</item>") { items.insert({it.name, it}); }
 		// reading in other item attributes
 		else if (img[i] == "<name>") { it.name = img[i + 1]; }
-		else if (img[i] == "<type>") { it.type = img[i + 1][0]; }
+		else if (img[i] == "<type>") { it.type = img[i + 1]; }
 		else if (img[i] == "<look>") { it.look = img[i + 1][0]; }
 	}
 }

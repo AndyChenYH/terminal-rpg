@@ -12,14 +12,14 @@ class Block {
 class Item {
 	public:
 	string name;
-	// w is weapon, r is resource
-	char type;
+	// eg: weapon, resource
+	string type;
 	// single character appearance
 	char look;
-	int damage;
-	vector<vector<bool>> aoe;
+	// area of effect & damage at each location
+	vector<vector<int>> aoe;
 	Item();
-	Item(string name, char type, char look);
+	Item(string name, string type, char look);
 };
 
 
