@@ -310,6 +310,7 @@ bool Map::inBound(int i, int j) {
 void loadMaps() {
 	maps.insert({"worldMap", Map("assets/worldMap.txt")});
 	maps.insert({"inn", Map("assets/inn.txt")});
+	maps.insert({"church", Map("assets/church.txt")});
 }
 // current map
 Map *curMap;
@@ -318,8 +319,8 @@ NPC *curNPC;
 // should be even numbers
 const int camHei = 40, camWid = 40;
 
-Player::Player() {}
 Player::Player(int i, int j) : i(i), j(j), health(10), hotBarNum(0) {
+	faceI = 0, faceJ = 1;
 	inventory = vector<pair<Item, int>>(20, {NONE_ITEM, 0});
 }
 // called every frame to check quest completion status & give reward
@@ -384,6 +385,7 @@ bool Player::takeItem(Item takeIt, int num = 1) {
 }
 void Player::act() {
 	// coordinates of block the player is targeting
+	// this does not account for aoe; it's only one block away from player
 	int ci = i + faceI, cj = j + faceJ;
 
 	// see if player has chosen to interact with an npc
@@ -391,14 +393,65 @@ void Player::act() {
 	if (fNPC != curMap->npcs.end()) {
 		// set talking mode
 		isTalking = true;
+		// set current NPC that the player is talking to
 		curNPC = &(fNPC->second);
 	}
-	auto fResource = curMap->resources.find({ci, cj});
-	// see whether the target block has a resource and current time is past its regrow time
-	if (fResource != curMap->resources.end() && fResource->second.second < frame) {
-		addItem(fResource->second.first);
-		// set resource's regrow time to 200 frames in the future
-		fResource->second.second = frame + 200;
+	// *** below are all actions involving weapons or tools ***
+	if (inventory[hotBarNum].first.type == "NONE") return;
+
+	// rotated aoe for each facing
+	vector<vector<int>> right = inventory[hotBarNum].first.aoe, up = rotateMatrix(right), left = rotateMatrix(up), down = rotateMatrix(left);
+	// width and height of N*N square matrix
+	int N = right.size();
+	// actual aoe for current facing
+	vector<vector<int>> aoeDir;
+	// relative postitioning of the top left corner of aoe matrix based on player facing
+	int relI, relJ;
+	// facing right
+	if (faceI == 0 && faceJ == 1) {
+		relI = -1, relJ = 1;
+		aoeDir = right;
+	}
+	// facing up
+	else if (faceI == -1 && faceJ == 0) {
+		relI = -N, relJ = -1;
+		aoeDir = up;
+	}
+	// facing left
+	else if (faceI == 0 && faceJ == -1) {
+		relI = -1, relJ = -N;
+		aoeDir = left;
+	}
+	// facing down
+	else if (faceI == 1 && faceJ == 0) {
+		relI = 1, relJ = -1;
+		aoeDir = down;
+	}
+	// shouldn't be any other facing direction
+	else assert(false);
+
+
+	if (inventory[hotBarNum].first.type == "tool") {
+		Item &it = inventory[hotBarNum].first;
+		// ii and jj and the locations in the aoeDir matrix
+		for (int ii = 0; ii < N; ii ++) {
+			for (int jj = 0; jj < N; jj ++) {
+				// (i + relI + ii, j + relJ + jj) is the absolute coordinate of the matrix element on the world map
+				int absI = i + relI + ii, absJ = j + relJ + jj;
+				// if the location in the aoe matrix is 0, then it means that's an empty spot
+				if (aoeDir[ii][jj] == 0) continue;
+				// search the map coordinates for any resources
+				auto fResource = curMap->resources.find({absI, absJ});
+				// see whether the target block has a resource and current time is past its regrow time
+				if (fResource != curMap->resources.end() && fResource->second.second < frame) {
+					// aoeDir[ii][[jj] is the amount the tool can harvest in the given spot in the aoe matrix
+					// adding the resource and amount to the player's inventory
+					addItem(fResource->second.first, aoeDir[ii][jj]);
+					// set resource's regrow time to 200 frames in the future
+					fResource->second.second = frame + 200;
+				}
+			}
+		}
 	}
 }
 void Player::dispHotbar(int relI, int relJ) {
@@ -478,6 +531,7 @@ int main() {
 	loadMaps();
 	// testing code that can be deleted later
 	curMap = &maps.at("worldMap");
+	player.addItem(items["basic_pickaxe"]);
 
 	while (true) {
 		// 50 refreshes a second

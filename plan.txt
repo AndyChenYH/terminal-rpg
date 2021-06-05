@@ -62,21 +62,17 @@ development plan:
 
 item:
 -items of different types
-	-attributes: name, damage, amount, AOE pattern, use() function
+	*attributes: name, damage, amount, AOE pattern
 	-resources
-		-use() may provide healing function
 	-weapons
-		-use() will attack where player is facing
+		-will attack where player is facing
 		-plays animation for a few seconds
 	-clothes that add to different stats
-	-tools for harvesting
-		-scythe is used for harvesting from bush
-		-axes is used for harvesting trees
-		-pickaxes for minerals and rocks
+	*tools for harvesting resources
 	*different items will be determined through class instances
 		*stored in treemap<name, item>
 	*read in preset items from txt file
-	-NOTHING item to repersent blank space; presistent inventory organization
+	*NONE item to repersent blank space; presistent inventory organization
 
 
 

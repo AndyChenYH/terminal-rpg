@@ -1,13 +1,16 @@
 <item>
 	<name>
-		basic_cutter
+		basic_pickaxe
 	</name>
 	<type>
-		scythe
+		tool
 	</type>
+	<look>
+		T
+	</look>
 	<aoe>
 		100
-		110
+		120
 		100
 	</aoe>
 </item>
@@ -18,7 +21,7 @@
 		rose
 	</name>
 	<type>
-		resoure
+		resource
 	</type>
 	<look>
 		&
