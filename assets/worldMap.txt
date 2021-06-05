@@ -67,6 +67,17 @@
 				<words>
 					can you get me 2 roses?
 				</words>
+				<trigger>
+					<type>
+						trade
+					</type>
+					<data>
+						rose
+						2
+						gold
+						3
+					</data>
+				</trigger>
 			</dialogue>
 		</dialogues>
 	</npc>

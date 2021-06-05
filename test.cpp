@@ -1,7 +1,18 @@
-#include <bits/stdc++.h>
+#include <stdio.h>
+#include <functional>
 using namespace std;
 
+function<int(int)> lam;
+
+void func() {
+	int a = 5;
+	lam = [=] (int b) -> int {
+		return a + b;
+	};
+}
+
 int main() {
-	string s = "12345";
-	printf("%d\n", stoi(s) - 3);
+	func();
+	printf("%d\n", lam(6));
+
 }

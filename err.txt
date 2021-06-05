@@ -1,17 +1,7 @@
-AddressSanitizer:DEADLYSIGNAL
-=================================================================
-==55678==ERROR: AddressSanitizer: BUS on unknown address 0x6110574b17e0 (pc 0x000101146959 bp 0x7ffeeeaf4790 sp 0x7ffeeeaf4780 T0)
-    #0 0x101146959 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__is_long() const string:1420
-    #1 0x101146786 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::data() const string:1242
-    #2 0x101113964 in main main.cpp:468
-    #3 0x7fff20499620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
-
-==55678==Register values:
-rax = 0x00000c220ae96200  rbx = 0x00006110574b17e0  rcx = 0x00001c220ae962fc  rdx = 0x00006110574b17e0  
-rdi = 0x00006110574b17e0  rsi = 0x00000000011756a2  rbp = 0x00007ffeeeaf4790  rsp = 0x00007ffeeeaf4780  
- r8 = 0x0000000000000028   r9 = 0x0000000000000068  r10 = 0x0000615000000a80  r11 = 0x00000000000001c0  
-r12 = 0x00006110574b17e0  r13 = 0x00006080000003e8  r14 = 0x00006110574b17e0  r15 = 0x00001fffddd5e91a  
-AddressSanitizer can not provide additional info.
-SUMMARY: AddressSanitizer: BUS string:1420 in std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::__is_long() const
-==55678==ABORTING
-/Users/andychen/Coding/bashFiles/runNcurses.sh: line 6: 55678 Abort trap: 6           ./a.out
+main.cpp:505:62: fatal error: expected ')'
+                                                if (curNPC->dialogues[curNPC->diaNum].trigger(&player) {
+                                                                                                       ^
+main.cpp:505:10: note: to match this '('
+                                                if (curNPC->dialogues[curNPC->diaNum].trigger(&player) {
+                                                   ^
+1 error generated.

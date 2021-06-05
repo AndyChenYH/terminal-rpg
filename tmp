@@ -1,3 +1,4 @@
+
 #include <bits/stdc++.h>
 #include "../../utils.cpp"
 #include "main.h"
@@ -86,10 +87,19 @@ class Block {
 	Block(bool pass, char look) : pass(pass), look(look) {
 	}
 };
-Item::Item() {}
-// resource initialization
-Item::Item(string name, char type, char look) : name(name), type(type), look(look) { }
-
+class Item {
+	public:
+	string name;
+	// w is weapon, r is resource
+	char type;
+	// single character appearance
+	char look;
+	int damage;
+	vector<vector<bool>> aoe;
+	Item() {}
+	// resource initialization
+	Item(string name, char type, char look) : name(name), type(type), look(look) { }
+};
 // preset items mapped from item names
 // allows reference to items just by name
 map<string, Item> items;
@@ -205,15 +215,13 @@ class Map {
 														assert(type != "");
 														if (type == "trade") {
 															// 1 is give to npc, 2 is receive from npc
-															string item1 = img[i + 1], item2 = img[i + 3];
-															int amount1 = stoi(img[i + 2]), amount2 = stoi(img[i + 4]);
-															dialogue.trigger = [=] (Player *pl) -> bool {
+															string item1 = img[i + 1], item2 = img[i + 4];
+															int amount1 = stoi(img[i + 2]), amount2 = stoi(img[i + 3]);
+															dialogue.trigger = [&] (Player *pl) -> bool {
 																bool res = pl->takeItem(items[item1], amount1);
 																if (res) pl->addItem(items[item2], amount2);
-																print "res: ", res;
 																return res;
 															};
-
 														}
 													}
 												}
@@ -257,8 +265,10 @@ class Map {
 						for ( ; img[i] != "</resource>"; i ++) {
 							// read in coordinates on two lines
 							if (img[i] == "<coord>") {
-								res.first.first = stoi(img[i + 1]);
-								res.first.second = stoi(img[i + 2]);
+								i ++;
+								res.first.first = stoi(img[i]);
+								i ++;
+								res.first.second = stoi(img[i]);
 							}
 							// read in item name
 							// which can be referenced with the "items" treemap to get an Item object
@@ -292,106 +302,115 @@ Map *curMap;
 NPC *curNPC;
 // should be even numbers
 const int camHei = 40, camWid = 40;
+class Player {
+	public:
+	// coordinates and facing directional vectors
+	int i, j, faceI, faceJ;
+	int health;
+	// item and amount
+	vector<pair<Item, int>> inventory;
+	// quest lambda functions
+	vector<function<bool(Player*)>> quests;
+	Player(int i, int j) : i(i), j(j), health(10) {}	
+	// called every frame to check quest completion status & give reward
+	void checkQuests() {
+		for (int ii = 0; ii < (int) quests.size(); ii ++) {
+			// quest returns bool based on completed or not
+			bool res = quests[ii](this);
+			// if completed, erase quest from list 
+			if (res) {
+				quests.erase(quests.begin() + ii);
+				ii --;
+			}
+		}
+	}
+	// directional vectors
+	void move(int di, int dj) {
+		int newI = i + di, newJ = j + dj;
+		// if moving out of bounds or into an unpassable block, don't move
+		if (!curMap->inBound(newI, newJ) || !curMap->data[newI][newJ].pass) return;
+		i = newI, j = newJ;
+		// seeing if block moved on is a portal
+		auto fid = curMap->ports.find({i, j});
+		if (fid != curMap->ports.end()) {
+			// perform portal teleportation
+			curMap = get<0>(fid->second);
+			i = get<1>(fid->second);
+			j = get<2>(fid->second);
+		}
+	}
+	void addItem(Item newIt, int num = 1) {
+		// does the player's inventory already have at least one of the resource?
+		// if so, just increment the amount
+		for (pair<Item, int> &pp : inventory) {
+			if (pp.first.name == newIt.name) {
+				pp.second += num;
+				return;
+			}
+		}
+		// if the item isn't already in the inventory, make a new spot for it
+		inventory.push_back({newIt, num});
+	}
+	// if item exists in inventory, take it out and return true
+	// otherwise return false
+	bool takeItem(Item takeIt, int num = 1) {
+		for (int ii = 0; ii < (int) inventory.size(); ii ++) {
+			// if has item and has enough amount
+			if (takeIt.name == inventory[ii].first.name && inventory[ii].second >= num) {
+				inventory[ii].second -= num;
+				// if item amount is zero, remove it from inventory
+				if (inventory[ii].second == 0) inventory.erase(inventory.begin() + ii);
+				return true;
+			}
+		}
+		return false;
+	}
+	void act() {
+		// coordinates of block the player is targeting
+		int ci = i + faceI, cj = j + faceJ;
 
-Player::Player(int i, int j) : i(i), j(j), health(10) {}	
-// called every frame to check quest completion status & give reward
-void Player::checkQuests() {
-	for (int ii = 0; ii < (int) quests.size(); ii ++) {
-		// quest returns bool based on completed or not
-		bool res = quests[ii](this);
-		// if completed, erase quest from list 
-		if (res) {
-			quests.erase(quests.begin() + ii);
-			ii --;
+		auto fResource = curMap->resources.find({ci, cj});
+		// see whether the target block has a resource and current time is past its regrow time
+		if (fResource != curMap->resources.end() && fResource->second.second < frame) {
+			addItem(fResource->second.first);
+			// set resource's regrow time to 200 frames in the future
+			fResource->second.second = frame + 200;
+		}
+		// see if player has chosen to interact with an npc
+		auto fNPC = curMap->npcs.find({ci, cj});
+		if (fNPC != curMap->npcs.end()) {
+			// set talking mode
+			isTalking = true;
+			curNPC = &(fNPC->second);
 		}
 	}
-}
-// directional vectors
-void Player::move(int di, int dj) {
-	int newI = i + di, newJ = j + dj;
-	// if moving out of bounds or into an unpassable block, don't move
-	if (!curMap->inBound(newI, newJ) || !curMap->data[newI][newJ].pass) return;
-	i = newI, j = newJ;
-	// seeing if block moved on is a portal
-	auto fid = curMap->ports.find({i, j});
-	if (fid != curMap->ports.end()) {
-		// perform portal teleportation
-		curMap = get<0>(fid->second);
-		i = get<1>(fid->second);
-		j = get<2>(fid->second);
-	}
-}
-void Player::addItem(Item newIt, int num = 1) {
-	// does the player's inventory already have at least one of the resource?
-	// if so, just increment the amount
-	for (pair<Item, int> &pp : inventory) {
-		if (pp.first.name == newIt.name) {
-			pp.second += num;
-			return;
+	void dispHotbar(int relI, int relJ) {
+		// draw outline of hotbar
+		drawImage(0, camWid + 20, hotbarBox);
+		// draw items within outline
+		for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
+			mvaddstr(1 + relI, 1 + relJ + jj * 8, 
+				(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
 		}
 	}
-	// if the item isn't already in the inventory, make a new spot for it
-	inventory.push_back({newIt, num});
-}
-// if item exists in inventory, take it out and return true
-// otherwise return false
-bool Player::takeItem(Item takeIt, int num = 1) {
-	for (int ii = 0; ii < (int) inventory.size(); ii ++) {
-		// if has item and has enough amount
-		if (takeIt.name == inventory[ii].first.name && inventory[ii].second >= num) {
-			inventory[ii].second -= num;
-			// if item amount is zero, remove it from inventory
-			if (inventory[ii].second == 0) inventory.erase(inventory.begin() + ii);
-			return true;
+	// relative coordinates to allow easy translation of object
+	void dispInventory(int relI, int relJ) {
+		// draw outline of inventory
+		drawImage(relI, relJ, inventoryBox);
+		// current index inside player's inventory
+		int ci = 0;
+		// ii and jj are the location in the inventory matrix
+		// could tecnically extend forever
+		for (int ii = 0; ci < (int) inventory.size(); ii ++) {
+			for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
+				// draw the character look of the item and amount
+				mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
+						(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second)).c_str()); 
+				ci ++;
+			}
 		}
 	}
-	return false;
-}
-void Player::act() {
-	// coordinates of block the player is targeting
-	int ci = i + faceI, cj = j + faceJ;
-
-	auto fResource = curMap->resources.find({ci, cj});
-	// see whether the target block has a resource and current time is past its regrow time
-	if (fResource != curMap->resources.end() && fResource->second.second < frame) {
-		addItem(fResource->second.first);
-		// set resource's regrow time to 200 frames in the future
-		fResource->second.second = frame + 200;
-	}
-	// see if player has chosen to interact with an npc
-	auto fNPC = curMap->npcs.find({ci, cj});
-	if (fNPC != curMap->npcs.end()) {
-		// set talking mode
-		isTalking = true;
-		curNPC = &(fNPC->second);
-	}
-}
-void Player::dispHotbar(int relI, int relJ) {
-	// draw outline of hotbar
-	drawImage(0, camWid + 20, hotbarBox);
-	// draw items within outline
-	for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
-		mvaddstr(1 + relI, 1 + relJ + jj * 8, 
-			(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
-	}
-}
-// relative coordinates to allow easy translation of object
-void Player::dispInventory(int relI, int relJ) {
-	// draw outline of inventory
-	drawImage(relI, relJ, inventoryBox);
-	// current index inside player's inventory
-	int ci = 0;
-	// ii and jj are the location in the inventory matrix
-	// could tecnically extend forever
-	for (int ii = 0; ci < (int) inventory.size(); ii ++) {
-		for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
-			// draw the character look of the item and amount
-			mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
-					(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second)).c_str()); 
-			ci ++;
-		}
-	}
-}
+};
 // load a bunch of preset items from assets/items.txt
 void loadItems() {
 	vector<string> img = loadAML("assets/items.txt");
@@ -410,7 +429,10 @@ void loadItems() {
 	}
 }
 Player player(5, 5);
-
+void testCode() {
+	world = Map("assets/worldMap.txt");
+	curMap = &world;
+}
 int main() {
 	initscr();
 	cbreak();
@@ -422,17 +444,8 @@ int main() {
 	// loading preset items from txt file
 	loadItems();
 	// testing code that can be deleted later
-	world = Map("assets/worldMap.txt");
-	curMap = &world;
-	/*
-	world.npcs.at({7, 9}).dialogues[2].hasTrigger = true;
-	world.npcs.at({7, 9}).dialogues[2].trigger = [&] (Player *pl) -> bool {
-		bool res = pl->takeItem(items["rose"], 2);
-		if (res) pl->addItem(items["gold"], 3);
-		return res;
-	};
-	*/
-
+	testCode();
+	
 	while (true) {
 		// 50 refreshes a second
 		usleep(20000);

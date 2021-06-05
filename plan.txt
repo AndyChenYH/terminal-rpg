@@ -36,7 +36,12 @@ development plan:
 
 		-read in portals 
 		-read in NPC
-		-
+			-read in dialogue triggers
+			-generate lambda function inline
+			-can give or receive NONE; make sure to check with conditional
+			-can only give or receive one type of item
+
+
 -refactor file reading: without the use of lambdas
 
 *npc class
@@ -128,7 +133,6 @@ map:
 		-killing monsters
 		-collecting natural resources
 		-visiting a npc
-		-giving an npc something
 	
 -combat
 	-attacks are laid out in a 3x3 grid-like shape with some square being empty
