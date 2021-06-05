@@ -11,6 +11,7 @@ ofstream fout("out.txt");
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
 
+// trim white spaces
 string trimWhite(const string& str, const string& whitespace = " \t") { const auto strBegin = str.find_first_not_of(whitespace); if (strBegin == string::npos) return ""; const auto strEnd = str.find_last_not_of(whitespace); const auto strRange = strEnd - strBegin + 1; return str.substr(strBegin, strRange); }
 
 // loads image from txt file and returns as list of horizontal lines
@@ -64,6 +65,22 @@ void drawImage(int relI, int relJ, vector<string> img) {
 	}
 }
 
+// rotates a square matrix counter clockwise 90 degrees
+vector<vector<int>> rotateMatrix(vector<vector<int>> mat) {
+	int N = mat.size();
+	for (int x = 0; x < N / 2; x++) {
+		for (int y = x; y < N - x - 1; y++) {
+			int temp = mat[x][y];
+			mat[x][y] = mat[y][N - 1 - x];
+			mat[y][N - 1 - x]
+				= mat[N - 1 - x][N - 1 - y];
+			mat[N - 1 - x][N - 1 - y]
+				= mat[N - 1 - y][x];
+			mat[N - 1 - y][x] = temp;
+		}
+	}
+	return mat;
+}
 // load images before hand to save time
 vector<string> hotbarBox = loadImage("assets/hotbarBox.txt");
 vector<string> inventoryBox = loadImage("assets/inventoryBox.txt");
@@ -84,6 +101,11 @@ Block::Block(bool pass, char look) : pass(pass), look(look) { }
 Item::Item() {}
 // resource initialization
 Item::Item(string name, string type, char look) : name(name), type(type), look(look) { }
+
+
+// NONE item: represents empty space
+// set to '~' for debugging purposes
+const Item NONE_ITEM("NONE", "", '~');
 
 // preset items mapped from item names
 // allows reference to items just by name
@@ -296,7 +318,10 @@ NPC *curNPC;
 // should be even numbers
 const int camHei = 40, camWid = 40;
 
-Player::Player(int i, int j) : i(i), j(j), health(10) {}	
+Player::Player() {}
+Player::Player(int i, int j) : i(i), j(j), health(10), hotBarNum(0) {
+	inventory = vector<pair<Item, int>>(20, {NONE_ITEM, 0});
+}
 // called every frame to check quest completion status & give reward
 void Player::checkQuests() {
 	for (int ii = 0; ii < (int) quests.size(); ii ++) {
@@ -333,8 +358,15 @@ void Player::addItem(Item newIt, int num = 1) {
 			return;
 		}
 	}
-	// if the item isn't already in the inventory, make a new spot for it
-	inventory.push_back({newIt, num});
+	// if the item isn't already in the inventory, replace an empty spot with it
+	for (pair<Item, int> &pp : inventory) {
+		if (pp.first.name == "NONE") {
+			pp = {newIt, num};
+			return;
+		}
+	}
+	// item couldn't be added; probably because inventory is full
+	assert(false);
 }
 // if item exists in inventory, take it out and return true
 // otherwise return false
@@ -344,7 +376,7 @@ bool Player::takeItem(Item takeIt, int num = 1) {
 		if (takeIt.name == inventory[ii].first.name && inventory[ii].second >= num) {
 			inventory[ii].second -= num;
 			// if item amount is zero, remove it from inventory
-			if (inventory[ii].second == 0) inventory.erase(inventory.begin() + ii);
+			if (inventory[ii].second == 0) inventory[ii].first = NONE_ITEM;
 			return true;
 		}
 	}
@@ -354,13 +386,6 @@ void Player::act() {
 	// coordinates of block the player is targeting
 	int ci = i + faceI, cj = j + faceJ;
 
-	auto fResource = curMap->resources.find({ci, cj});
-	// see whether the target block has a resource and current time is past its regrow time
-	if (fResource != curMap->resources.end() && fResource->second.second < frame) {
-		addItem(fResource->second.first);
-		// set resource's regrow time to 200 frames in the future
-		fResource->second.second = frame + 200;
-	}
 	// see if player has chosen to interact with an npc
 	auto fNPC = curMap->npcs.find({ci, cj});
 	if (fNPC != curMap->npcs.end()) {
@@ -368,15 +393,25 @@ void Player::act() {
 		isTalking = true;
 		curNPC = &(fNPC->second);
 	}
+	auto fResource = curMap->resources.find({ci, cj});
+	// see whether the target block has a resource and current time is past its regrow time
+	if (fResource != curMap->resources.end() && fResource->second.second < frame) {
+		addItem(fResource->second.first);
+		// set resource's regrow time to 200 frames in the future
+		fResource->second.second = frame + 200;
+	}
 }
 void Player::dispHotbar(int relI, int relJ) {
 	// draw outline of hotbar
 	drawImage(0, camWid + 20, hotbarBox);
 	// draw items within outline
 	for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
-		mvaddstr(1 + relI, 1 + relJ + jj * 8, 
-			(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
+		if (inventory[jj].first.name != "NONE") {
+			mvaddstr(1 + relI, 1 + relJ + jj * 8, 
+				(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
+		}
 	}
+	mvaddch(relI + 3, relJ + 3 + hotBarNum * 8, '^');
 }
 // relative coordinates to allow easy translation of object
 void Player::dispInventory(int relI, int relJ) {
@@ -388,15 +423,20 @@ void Player::dispInventory(int relI, int relJ) {
 	// could tecnically extend forever
 	for (int ii = 0; ci < (int) inventory.size(); ii ++) {
 		for (int jj = 0; ci < (int) inventory.size() && jj < 4; jj ++) {
-			// draw the character look of the item and amount
-			mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
-					(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second)).c_str()); 
+			// make sure it's not a NONE type item (denoting empty space)
+			if (inventory[ci].first.name != "NONE") {
+				// draw the character look of the item and amount
+				mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
+						(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second)).c_str()); 
+			}
 			ci ++;
 		}
 	}
 }
 // load a bunch of preset items from assets/items.txt
 void loadItems() {
+	// also load in the special none item type
+	items.insert({"NONE", NONE_ITEM});
 	vector<string> img = loadAML("assets/items.txt");
 	// which line in the file
 	int i = 0;
@@ -410,6 +450,17 @@ void loadItems() {
 		else if (img[i] == "<name>") { it.name = img[i + 1]; }
 		else if (img[i] == "<type>") { it.type = img[i + 1]; }
 		else if (img[i] == "<look>") { it.look = img[i + 1][0]; }
+		// read in aoe pattern
+		else if (img[i] == "<aoe>") {
+			i ++;
+			int N = img[i].size();
+			it.aoe = vector<vector<int>>(N, vector<int>(N));
+			for (int ii = 0; img[i] != "</aoe>"; ii ++, i ++) {
+				for (int j = 0; j < N; j ++) {
+					it.aoe[ii][j] = img[i][j] - '0';
+				}
+			}
+		}
 	}
 }
 Player player(5, 5);
@@ -533,6 +584,11 @@ int main() {
 			else if (inp == KEY_DOWN) player.faceI = 1, player.faceJ = 0;
 			else if (inp == KEY_LEFT) player.faceI = 0, player.faceJ = -1;
 			else if (inp == KEY_RIGHT) player.faceI = 0, player.faceJ = 1;
+			// change currrent hotbar slot
+			else if ('1' <= inp && inp <= '4') {
+				// converted it to zero-indexed
+				player.hotBarNum = inp - 1 - '0';
+			}
 			// action depending on the player's facing. can be collecting resources or attacking
 			else if (inp == ' ') player.act();
 			// turn viewing inventory on and off

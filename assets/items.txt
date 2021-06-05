@@ -1,9 +1,24 @@
 <item>
 	<name>
+		basic_cutter
+	</name>
+	<type>
+		scythe
+	</type>
+	<aoe>
+		100
+		110
+		100
+	</aoe>
+</item>
+
+
+<item>
+	<name>
 		rose
 	</name>
 	<type>
-		r
+		resoure
 	</type>
 	<look>
 		&
@@ -15,7 +30,7 @@
 		gold
 	</name>
 	<type>
-		r
+		resource
 	</type>
 	<look>
 		G
@@ -27,7 +42,7 @@
 		honey
 	</name>
 	<type>
-		r
+		resource
 	</type>
 	<look>
 		+
@@ -39,7 +54,7 @@
 		cactus
 	</name>
 	<type>
-		r
+		resource
 	</type>
 	<look>
 		}

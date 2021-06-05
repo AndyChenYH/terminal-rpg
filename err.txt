@@ -1,67 +1,43 @@
-main.cpp:86:61: fatal error: no matching constructor for initialization of 'std::__1::string' (aka 'basic_string<char, char_traits<char>, allocator<char> >')
-Item::Item(string name, char type, char look) : name(name), type(type), look(look) { }
-                                                            ^    ~~~~
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:817:5: note: candidate constructor template not viable: no known conversion from 'char' to 'const char *' for 1st argument; take the address of the argument with &
-    basic_string(const _CharT* __s) : __r_(__default_init_tag(), __default_init_tag()) {
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:792:40: note: candidate constructor not viable: no known conversion from 'char' to 'const std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >::allocator_type' (aka 'const std::__1::allocator<char>') for 1st argument
-    _LIBCPP_INLINE_VISIBILITY explicit basic_string(const allocator_type& __a)
-                                       ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:799:5: note: candidate constructor not viable: no known conversion from 'char' to 'const std::__1::basic_string<char>' for 1st argument
-    basic_string(const basic_string& __str);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:804:5: note: candidate constructor not viable: no known conversion from 'char' to 'std::__1::basic_string<char>' for 1st argument
-    basic_string(basic_string&& __str)
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:867:5: note: candidate constructor not viable: no known conversion from 'char' to 'initializer_list<char>' for 1st argument
-    basic_string(initializer_list<_CharT> __il);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:853:18: note: candidate template ignored: requirement '__can_be_converted_to_string_view<char, std::__1::char_traits<char>, char>::value' was not satisfied [with _Tp = char]
-        explicit basic_string(const _Tp& __t);
-                 ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:827:9: note: candidate constructor template not viable: requires 2 arguments, but 1 was provided
-        basic_string(const _CharT* __s, const _Allocator& __a);
-        ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:838:9: note: candidate constructor template not viable: requires 3 arguments, but 1 was provided
-        basic_string(size_type __n, _CharT __c, const _Allocator& __a);
-        ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:848:9: note: candidate constructor template not viable: requires at least 3 arguments, but 1 was provided
-        basic_string(const _Tp& __t, size_type __pos, size_type __n,
-        ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:857:18: note: candidate constructor template not viable: requires 2 arguments, but 1 was provided
-        explicit basic_string(const _Tp& __t, const allocator_type& __a);
-                 ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:861:9: note: candidate constructor template not viable: requires 2 arguments, but 1 was provided
-        basic_string(_InputIterator __first, _InputIterator __last);
-        ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:864:9: note: candidate constructor template not viable: requires 3 arguments, but 1 was provided
-        basic_string(_InputIterator __first, _InputIterator __last, const allocator_type& __a);
-        ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:789:31: note: candidate constructor not viable: requires 0 arguments, but 1 was provided
-    _LIBCPP_INLINE_VISIBILITY basic_string()
-                              ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:800:5: note: candidate constructor not viable: requires 2 arguments, but 1 was provided
-    basic_string(const basic_string& __str, const allocator_type& __a);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:812:5: note: candidate constructor not viable: requires 2 arguments, but 1 was provided
-    basic_string(basic_string&& __str, const allocator_type& __a);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:830:5: note: candidate constructor not viable: requires 2 arguments, but 1 was provided
-    basic_string(const _CharT* __s, size_type __n);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:834:5: note: candidate constructor not viable: requires 2 arguments, but 1 was provided
-    basic_string(size_type __n, _CharT __c);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:869:5: note: candidate constructor not viable: requires 2 arguments, but 1 was provided
-    basic_string(initializer_list<_CharT> __il, const _Allocator& __a);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:832:5: note: candidate constructor not viable: requires 3 arguments, but 1 was provided
-    basic_string(const _CharT* __s, size_type __n, const _Allocator& __a);
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:843:5: note: candidate constructor not viable: requires at least 2 arguments, but 1 was provided
-    basic_string(const basic_string& __str, size_type __pos,
-    ^
-/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1/string:840:5: note: candidate constructor not viable: requires at least 3 arguments, but 1 was provided
-    basic_string(const basic_string& __str, size_type __pos, size_type __n,
-    ^
-1 error generated.
+=================================================================
+==26489==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x603000004638 at pc 0x0001099f772f bp 0x7ffee621e370 sp 0x7ffee621e368
+READ of size 8 at 0x603000004638 thread T0
+    #0 0x1099f772e in loadItems() main.cpp:436
+    #1 0x1099f7e20 in main main.cpp:453
+    #2 0x7fff205e8620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
+
+Address 0x603000004638 is a wild pointer.
+SUMMARY: AddressSanitizer: heap-buffer-overflow main.cpp:436 in loadItems()
+Shadow bytes around the buggy address:
+  0x1c0600000870: fa fa 00 00 00 fa fa fa 00 00 00 fa fa fa 00 00
+  0x1c0600000880: 00 fa fa fa 00 00 00 fa fa fa 00 00 00 fa fa fa
+  0x1c0600000890: 00 00 00 fa fa fa 00 00 00 fa fa fa 00 00 00 fa
+  0x1c06000008a0: fa fa 00 00 00 fa fa fa fd fd fd fa fa fa 00 00
+  0x1c06000008b0: 00 fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x1c06000008c0: fa fa fa fa fa fa fa[fa]fa fa fa fa fa fa fa fa
+  0x1c06000008d0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x1c06000008e0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x1c06000008f0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x1c0600000900: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x1c0600000910: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==26489==ABORTING
+/Users/andychen/Coding/bashFiles/runNcurses.sh: line 6: 26489 Abort trap: 6           ./a.out

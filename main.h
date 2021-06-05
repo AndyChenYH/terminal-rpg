@@ -17,6 +17,7 @@ class Item {
 	// single character appearance
 	char look;
 	// area of effect & damage at each location
+	// must be a N*N matrix, where N is odd, so that it can be properly rotated and player can stand in middle
 	vector<vector<int>> aoe;
 	Item();
 	Item(string name, string type, char look);
@@ -28,10 +29,14 @@ class Player {
 	// coordinates and facing directional vectors
 	int i, j, faceI, faceJ;
 	int health;
+	// current hotbar item
+	int hotBarNum;
 	// item and amount
+	// set size of 20
 	vector<pair<Item, int>> inventory;
 	// quest lambda functions
 	vector<function<bool(Player*)>> quests;
+	Player();
 	Player(int i, int j);
 	void checkQuests();
 	void move(int di, int dj);
