@@ -84,7 +84,6 @@ int main() {
 					}
 				}
 			}
-			/*
 			set<pair<int, int>> tmp;
 			for (pair<int, int> p : enemies) {
 				// randomly selected as yes, and also is more than 1 block away from player
@@ -104,7 +103,6 @@ int main() {
 L1:;
 			}
 			enemies = tmp;
-			*/
 
 			set<pair<int, int>> newPos;
 			for (pair<int, int> p : enemies) {
