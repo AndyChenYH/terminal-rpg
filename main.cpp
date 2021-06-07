@@ -14,6 +14,8 @@ namespace __hidden__ { struct print { bool space; print() : space(false) {} ~pri
 // trim white spaces
 string trimWhite(const string& str, const string& whitespace = " \t") { const auto strBegin = str.find_first_not_of(whitespace); if (strBegin == string::npos) return ""; const auto strEnd = str.find_last_not_of(whitespace); const auto strRange = strEnd - strBegin + 1; return str.substr(strBegin, strRange); }
 
+const vector<pair<int, int>> drs = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+
 // loads image from txt file and returns as list of horizontal lines
 vector<string> loadImage(string fil) {
 	ifstream fin(fil);
@@ -91,6 +93,8 @@ int frame = 0;
 bool isTalking = false;
 // is player looking at inventory?
 bool viewInventory = false;
+// should be odd numbers, so player will be in middle
+const int camHei = 41, camWid = 41;
 
 Block::Block() {
 	pass = true;
@@ -122,6 +126,8 @@ Dialogue::Dialogue(string words, function<bool(Player*)> trigger)
 NPC::NPC(string name, vector<Dialogue> dialogues) 
 	: name(name), diaNum(0), dialogues(dialogues) { }
 
+Enemy::Enemy() {}
+
 // treemap to allow referencing maps by their names
 map<string, Map> maps;
 
@@ -141,6 +147,7 @@ Map::Map(string file) {
 		// also initializes size of map (row and column)
 		if (img[i] == "<basicLook>") {
 			i ++;
+			// initialize row and column using basic look's rectangular dimension
 			row = 0, col = img[i].size();
 			for ( ; img[i] != "</basicLook>"; i ++) {
 				// add new row to map data
@@ -296,15 +303,51 @@ Map::Map(string file) {
 	}
 	
 }
-/*
-// basic map initialization
-Map::Map(string description, int row, int col) : description(description), row(row), col(col) {
-	data = vector<vector<Block>>(row, vector<Block>(col));
-}
-*/
 // check if is in the bound of the map
 bool Map::inBound(int i, int j) {
 	return 0 <= i && i < row && 0 <= j && j < col;
+}
+// sI and sJ are player coordinates, in absolute map position
+// top, left, hei, and wid specify the rectangular field in which bfs is done (eg: current camera view)
+void Map::enemyPathfind(int sI, int sJ, int top, int left, int hei, int wid) {
+	assert(0 <= top && 0 <= left && top + hei < row && left + wid < col);
+	// coordinates of visited and parent are relative to the rectangular field
+	vector<vector<bool>> vis(hei, vector<bool>(wid, false));
+	vector<vector<pair<int, int>>> parent(hei, vector<pair<int, int>>(wid));
+	for (int i = 0; i < hei; i ++) {
+		for (int j = 0; j < wid; j ++) parent[i][j] = {i, j};
+	}
+	// coordinates in queue are relative to the field
+	list<pair<int, int>> q;
+	// add the initial starting position into the queue
+	q.push_back({sI - top, sJ - left});
+	while (!q.empty()) {
+		int i = q.front().first, j = q.front().second;
+		q.pop_front();
+		for (pair<int, int> d : drs) {
+			int ni = i + d.first, nj = j + d.second;
+			if (0 <= ni && ni < hei && 0 <= nj && nj < wid && data[top + ni][left + nj].pass) {
+				if (!vis[ni][nj]) {
+					q.push_back({ni, nj});
+					vis[ni][nj] = true;
+					parent[ni][nj] = {i, j};
+				}
+			}
+		}
+	}
+
+	map<pair<int, int>, Enemy> newPos;
+	// TODO: check if enemy is within field
+	for (pair<pair<int, int>, Enemy> pp : enemies) {
+		// relative parent to the field
+		pair<int, int> par = parent[pp.first.first][pp.first.second];
+		// absolute parent
+		pair<int, int> np = {par.first + top, par.second + left};
+		if (newPos.find(np) != newPos.end() || enemies.find(np) != enemies.end()
+				|| np == make_pair(sI, sJ)) newPos.insert(pp);
+		else newPos.insert({np, pp.second});
+	}
+	enemies = newPos;
 }
 
 void loadMaps() {
@@ -316,8 +359,6 @@ void loadMaps() {
 Map *curMap;
 // current NPC the player is talking to
 NPC *curNPC;
-// should be even numbers
-const int camHei = 40, camWid = 40;
 
 Player::Player(int i, int j) : i(i), j(j), health(10), hotBarNum(0) {
 	faceI = 0, faceJ = 1;
@@ -339,16 +380,19 @@ void Player::checkQuests() {
 void Player::move(int di, int dj) {
 	int newI = i + di, newJ = j + dj;
 	// if moving out of bounds or into an unpassable block, don't move
-	if (!curMap->inBound(newI, newJ) || !curMap->data[newI][newJ].pass) return;
+	// don't move onto an enemy
+	if (!curMap->inBound(newI, newJ) || !curMap->data[newI][newJ].pass
+			|| curMap->enemies.find({newI, newJ}) != curMap->enemies.end()) return;
 	i = newI, j = newJ;
 	// seeing if block moved on is a portal
-	auto fid = curMap->ports.find({i, j});
-	if (fid != curMap->ports.end()) {
+	auto fPort = curMap->ports.find({i, j});
+	if (fPort != curMap->ports.end()) {
 		// perform portal teleportation
-		curMap = &maps.at(get<0>(fid->second));
-		i = get<1>(fid->second);
-		j = get<2>(fid->second);
+		curMap = &maps.at(get<0>(fPort->second));
+		i = get<1>(fPort->second);
+		j = get<2>(fPort->second);
 	}
+
 }
 void Player::addItem(Item newIt, int num = 1) {
 	// does the player's inventory already have at least one of the resource?
@@ -400,7 +444,8 @@ void Player::act() {
 	if (inventory[hotBarNum].first.type == "NONE") return;
 
 	// rotated aoe for each facing
-	vector<vector<int>> right = inventory[hotBarNum].first.aoe, up = rotateMatrix(right), left = rotateMatrix(up), down = rotateMatrix(left);
+	vector<vector<int>> right = inventory[hotBarNum].first.aoe, up = rotateMatrix(right),
+	  	left = rotateMatrix(up), down = rotateMatrix(left);
 	// width and height of N*N square matrix
 	int N = right.size();
 	// actual aoe for current facing
@@ -430,9 +475,7 @@ void Player::act() {
 	// shouldn't be any other facing direction
 	else assert(false);
 
-
 	if (inventory[hotBarNum].first.type == "tool") {
-		Item &it = inventory[hotBarNum].first;
 		// ii and jj and the locations in the aoeDir matrix
 		for (int ii = 0; ii < N; ii ++) {
 			for (int jj = 0; jj < N; jj ++) {
@@ -532,6 +575,7 @@ int main() {
 	// testing code that can be deleted later
 	curMap = &maps.at("worldMap");
 	player.addItem(items["basic_pickaxe"]);
+	curMap->enemies.insert({{7, 2}, Enemy()});
 
 	while (true) {
 		// 50 refreshes a second
@@ -551,12 +595,13 @@ int main() {
 				if (ci == player.i && cj == player.j) {
 					mvaddch(i, j, '@');
 				}
-				// draw world tile
+				// draw the sparse things stored as treemaps
 				else if (curMap->inBound(ci, cj)) {
 					// see if a port or resource node or npc has to be drawn
 					auto fPort = curMap->ports.find({ci, cj});
 					auto fResource = curMap->resources.find({ci, cj});
 					auto fNPC = curMap->npcs.find({ci, cj});
+					auto fEnemy = curMap->enemies.find({ci, cj});
 					if (fPort != curMap->ports.end()) {
 						// make sure ports and resource node aren't on the same block
 						mvaddch(i, j, '^');
@@ -569,6 +614,10 @@ int main() {
 					// draw npc if it exists in this block
 					else if (fNPC != curMap->npcs.end()) {
 						mvaddch(i, j, '0');
+					}
+					// draw enemy if it exists within this block
+					else if (fEnemy != curMap->enemies.end()) {
+						mvaddch(i, j, 'E');
 					}
 					// draw normal map block
 					else mvaddch(i, j, curMap->data[ci][cj].look);
@@ -624,6 +673,7 @@ int main() {
 			}
 		}
 		else if (viewInventory) {
+			// 'e' toggles inventory viewing, so pressing it again turns it off
 			if (inp == 'e') {
 				viewInventory = false;
 			}
@@ -648,6 +698,12 @@ int main() {
 			// turn viewing inventory on and off
 			else if (inp == 'e') viewInventory = !viewInventory;
 		}
+
+		// enemy pathfinding
+		if (frame % 20 == 0) {
+			curMap->enemyPathfind(player.i, player.j, 0, 0, curMap->row - 1, curMap->col - 1);
+		}
+
 	}
 	endwin();
 }

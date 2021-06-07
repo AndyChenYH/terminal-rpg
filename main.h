@@ -39,7 +39,6 @@ class Player {
 	vector<pair<Item, int>> inventory;
 	// quest lambda functions
 	vector<function<bool(Player*)>> quests;
-	Player();
 	Player(int i, int j);
 	void checkQuests();
 	void move(int di, int dj);
@@ -72,6 +71,10 @@ class NPC {
 	NPC() {}
 	NPC(string name, vector<Dialogue> dialogues);
 };
+class Enemy {
+	public:
+	Enemy();
+};
 class Map {
 	public:
 	string description;
@@ -85,9 +88,12 @@ class Map {
 	map<pair<int, int>, pair<Item, int>> resources;
 	// coordinates of NPCs
 	map<pair<int, int>, NPC> npcs;
+	// coordinates of enemies
+	map<pair<int, int>, Enemy> enemies;
 
 	Map();
 	Map(string file);
 	bool inBound(int i, int j);
-
+	// starting i, starting j, rectangular field in which to operate the path finding algorithm
+	void enemyPathfind(int sI, int sJ, int top, int left, int hei, int wid);
 };

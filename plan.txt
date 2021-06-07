@@ -134,14 +134,22 @@ map:
 		-killing monsters
 		-collecting natural resources
 		-visiting a npc
-	
+-enemies
+	-aoe pattern, but only attacks when next to player
+	-health, name, look
+	-have preset types, loaded through enemies.txt AML file
 -combat
-	-attacks are laid out in a 3x3 grid-like shape with some square being empty
-	-enemies use pathfinding to walk to a square next to the player to attack
-		-then faces in the player's direction to attack
-	-allows the player to attack in the direction they are facing
+	*attacks are laid out in a 3x3 grid-like shape with some square being empty
+	*enemies use pathfinding to walk to a square next to the player to attack
+
+	*allows the player to attack in the direction they are facing
 	-attack animation can play out over several frames
 		-damage taken instantly
-
+-miscellaneous
+	-animation
+		-consists of images and displaying durations
+	-chat
+		-ingame information, npc dialogue
+		-stored in queue
 -crafting
 	-select from a list of recipes and waiting for a while for crafting to complete
