@@ -94,7 +94,9 @@ bool isTalking = false;
 // is player looking at inventory?
 bool viewInventory = false;
 // should be odd numbers, so player will be in middle
-const int camHei = 41, camWid = 41;
+const int camHei = 21, camWid = 21;
+// rectangular area in which things will be constantly refreshed/loaded
+const int loadHei = 50, loadWid = 50;
 
 Block::Block() {
 	pass = true;
@@ -310,7 +312,8 @@ bool Map::inBound(int i, int j) {
 // sI and sJ are player coordinates, in absolute map position
 // top, left, hei, and wid specify the rectangular field in which bfs is done (eg: current camera view)
 void Map::enemyPathfind(int sI, int sJ, int top, int left, int hei, int wid) {
-	assert(0 <= top && 0 <= left && top + hei < row && left + wid < col);
+	print ">>", top, left, hei, wid;
+	assert(0 <= top && 0 <= left && top + hei <= row && left + wid <= col);
 	// coordinates of visited and parent are relative to the rectangular field
 	vector<vector<bool>> vis(hei, vector<bool>(wid, false));
 	vector<vector<pair<int, int>>> parent(hei, vector<pair<int, int>>(wid));
@@ -337,15 +340,25 @@ void Map::enemyPathfind(int sI, int sJ, int top, int left, int hei, int wid) {
 	}
 
 	map<pair<int, int>, Enemy> newPos;
-	// TODO: check if enemy is within field
 	for (pair<pair<int, int>, Enemy> pp : enemies) {
-		// relative parent to the field
-		pair<int, int> par = parent[pp.first.first][pp.first.second];
+		// absolute position
+		pair<int, int> absPos = pp.first;
+		// relative position
+		pair<int, int> relPos = {absPos.first - top, absPos.second - left};
+		bool enemyIn = 0 <= relPos.first && relPos.first < hei && 0 <= relPos.second && relPos.second < wid;
+		if (!enemyIn) {
+			newPos.insert(pp);
+			continue;
+		}
+
+		// relative parent
+		pair<int, int> relPar = parent[relPos.first][relPos.second];
 		// absolute parent
-		pair<int, int> np = {par.first + top, par.second + left};
-		if (newPos.find(np) != newPos.end() || enemies.find(np) != enemies.end()
-				|| np == make_pair(sI, sJ)) newPos.insert(pp);
-		else newPos.insert({np, pp.second});
+		pair<int, int> absPar = {relPar.first + top, relPar.second + left};
+
+		if (newPos.find(absPar) != newPos.end() || enemies.find(absPar) != enemies.end()
+				|| absPar == make_pair(sI, sJ)) newPos.insert(pp);
+		else newPos.insert({absPar, pp.second});
 	}
 	enemies = newPos;
 }
@@ -576,6 +589,8 @@ int main() {
 	curMap = &maps.at("worldMap");
 	player.addItem(items["basic_pickaxe"]);
 	curMap->enemies.insert({{7, 2}, Enemy()});
+	curMap->enemies.insert({{20, 20}, Enemy()});
+	curMap->enemies.insert({{20, 21}, Enemy()});
 
 	while (true) {
 		// 50 refreshes a second
@@ -701,7 +716,9 @@ int main() {
 
 		// enemy pathfinding
 		if (frame % 20 == 0) {
-			curMap->enemyPathfind(player.i, player.j, 0, 0, curMap->row - 1, curMap->col - 1);
+			int top = max(0, player.i - loadHei / 2), left = max(0, player.j - loadWid / 2);
+			int bottom = min(curMap->row, top + loadHei + 1), right = min(curMap->col, left + loadWid + 1);
+			curMap->enemyPathfind(player.i, player.j, top, left, bottom - top, right - left);
 		}
 
 	}
