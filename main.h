@@ -73,7 +73,8 @@ class NPC {
 };
 class Enemy {
 	public:
-	Enemy();
+	int health;
+	Enemy(int health);
 };
 class Map {
 	public:

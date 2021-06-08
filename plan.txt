@@ -135,7 +135,7 @@ map:
 		-collecting natural resources
 		-visiting a npc
 -enemies
-	-aoe pattern, but only attacks when next to player
+	-only attacks when next to player
 	-health, name, look
 	-have preset types, loaded through enemies.txt AML file
 -combat

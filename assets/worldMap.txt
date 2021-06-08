@@ -73,28 +73,24 @@
 <portals>
 	<portal>
 		<coord1>
-			3
-			4
+			3 4
 		</coord1>
 		<mapTo>
 			inn
 		</mapTo>
 		<coord2>
-			1
-			1
+			1 1
 		</coord2>
 	</portal>
 	<portal>
 		<coord1>
-			7
-			18
+			7 18
 		</coord1>
 		<mapTo>
 			church
 		</mapTo>
 		<coord2>
-			3
-			5
+			3 5
 		</coord2>
 	</portal>
 </portals>
@@ -102,8 +98,7 @@
 <resources>
 	<resource>
 		<coord>
-			4
-			3
+			4 3
 		</coord>
 		<item>
 			rose
@@ -111,8 +106,7 @@
 	</resource>
 	<resource>
 		<coord>
-			6
-			8
+			6 8
 		</coord>
 		<item>
 			cactus
@@ -121,8 +115,7 @@
 
 	<resource>
 		<coord>
-			4
-			20
+			4 20
 		</coord>
 		<item>
 			honey
@@ -133,8 +126,7 @@
 <npcs>
 	<npc>
 		<coord>
-			7
-			9
+			7 9
 		</coord>
 		<name>
 			John
@@ -159,10 +151,8 @@
 						trade
 					</type>
 					<data>
-						rose
-						2
-						gold
-						3
+						rose 2
+						gold 3
 					</data>
 				</trigger>
 			</dialogue>

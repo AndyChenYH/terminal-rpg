@@ -6,13 +6,15 @@ using namespace std;
 
 // output file for debugging
 ofstream fout("out.txt");
-
 // python2 style print function for debugging; outputs with fout
 namespace __hidden__ { struct print { bool space; print() : space(false) {} ~print() { fout << endl; } template <typename T> print &operator , (const T &t) { if (space) fout << ' '; else space = true; fout << t; return *this; } }; }
 #define print __hidden__::print(),
-
 // trim white spaces
 string trimWhite(const string& str, const string& whitespace = " \t") { const auto strBegin = str.find_first_not_of(whitespace); if (strBegin == string::npos) return ""; const auto strEnd = str.find_last_not_of(whitespace); const auto strRange = strEnd - strBegin + 1; return str.substr(strBegin, strRange); }
+// split string by delimiter
+vector<string> splitString(const string str, const string delim) { vector<string> tokens; size_t prev = 0, pos = 0; do { pos = str.find(delim, prev); if (pos == string::npos) pos = str.length(); string token = str.substr(prev, pos-prev); if (!token.empty()) tokens.push_back(token); prev = pos + delim.length(); } while (pos < str.length() && prev < str.length()); return tokens; }
+// rotates a square matrix counter clockwise 90 degrees
+vector<vector<int>> rotateMatrix(vector<vector<int>> mat) { int N = mat.size(); for (int x = 0; x < N / 2; x++) { for (int y = x; y < N - x - 1; y++) { int temp = mat[x][y]; mat[x][y] = mat[y][N - 1 - x]; mat[y][N - 1 - x] = mat[N - 1 - x][N - 1 - y]; mat[N - 1 - x][N - 1 - y] = mat[N - 1 - y][x]; mat[N - 1 - y][x] = temp; } } return mat; }
 
 const vector<pair<int, int>> drs = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 
@@ -66,23 +68,6 @@ void drawImage(int relI, int relJ, vector<string> img) {
 		mvaddstr(relI + i, relJ, img[i].c_str());
 	}
 }
-
-// rotates a square matrix counter clockwise 90 degrees
-vector<vector<int>> rotateMatrix(vector<vector<int>> mat) {
-	int N = mat.size();
-	for (int x = 0; x < N / 2; x++) {
-		for (int y = x; y < N - x - 1; y++) {
-			int temp = mat[x][y];
-			mat[x][y] = mat[y][N - 1 - x];
-			mat[y][N - 1 - x]
-				= mat[N - 1 - x][N - 1 - y];
-			mat[N - 1 - x][N - 1 - y]
-				= mat[N - 1 - y][x];
-			mat[N - 1 - y][x] = temp;
-		}
-	}
-	return mat;
-}
 // load images before hand to save time
 vector<string> hotbarBox = loadImage("assets/hotbarBox.txt");
 vector<string> inventoryBox = loadImage("assets/inventoryBox.txt");
@@ -97,6 +82,33 @@ bool viewInventory = false;
 const int camHei = 21, camWid = 21;
 // rectangular area in which things will be constantly refreshed/loaded
 const int loadHei = 50, loadWid = 50;
+// current color pair id; used in init_pair and attron(COLOR_PAIR()) to identify individual color pairs
+// current color id: used in init_color to identify individual colors; numbers 0-7 are taken by original colors
+int curColorPairId = 1, curColorId = 8;
+// maps name of color to a color pair
+map<string, int> colors = {
+	{"default", -1},
+	{"black", COLOR_BLACK},
+	{"red", COLOR_RED},
+	{"green", COLOR_GREEN},
+	{"yellow", COLOR_YELLOW},
+	{"blue", COLOR_BLUE},
+	{"magenta", COLOR_MAGENTA},
+	{"cyan", COLOR_CYAN},
+	{"white", COLOR_WHITE},
+};
+map<string, int> colorPairs;
+void makeColor(string name, int r, int g, int b) {
+	assert(r < 1000 && g < 1000 && b < 1000 && curColorId < COLORS);
+	init_color(curColorId, r, g, b);
+	colors.insert({name, curColorId});
+	curColorId ++;
+}
+void makeColorPair(string name, string foreground, string background) {
+	init_pair(curColorPairId, colors[foreground], colors[background]);
+	colorPairs.insert({name, curColorPairId});
+	curColorPairId ++;
+}
 
 Block::Block() {
 	pass = true;
@@ -128,7 +140,7 @@ Dialogue::Dialogue(string words, function<bool(Player*)> trigger)
 NPC::NPC(string name, vector<Dialogue> dialogues) 
 	: name(name), diaNum(0), dialogues(dialogues) { }
 
-Enemy::Enemy() {}
+Enemy::Enemy(int health) : health(health) {}
 
 // treemap to allow referencing maps by their names
 map<string, Map> maps;
@@ -169,10 +181,12 @@ Map::Map(string file) {
 					string mapTo;
 					for ( ; img[i] != "</portal>"; i ++) {
 						if (img[i] == "<coord1>") {
-							coord1 = {stoi(img[i + 1]), stoi(img[i + 2])};
+							vector<string> sp = splitString(img[i + 1], " ");
+							coord1 = {stoi(sp[0]), stoi(sp[1])};
 						}
 						else if (img[i] == "<coord2>") {
-							coord2 = {stoi(img[i + 1]), stoi(img[i + 2])};
+							vector<string> split = splitString(img[i + 1], " ");
+							coord2 = {stoi(split[0]), stoi(split[1])};
 						}
 						else if (img[i] == "<mapTo>") {
 							mapTo = img[i + 1];
@@ -197,7 +211,8 @@ Map::Map(string file) {
 						// read in npc coordinates x, y in two lines
 						if (img[i] == "<coord>") {
 							// change the integers into string and put them in coordinate pair
-							int x = stoi(img[i + 1]), y = stoi(img[i + 2]);
+							vector<string> sp = splitString(img[i + 1], " ");
+							int x = stoi(sp[0]), y = stoi(sp[1]);
 							coord = {x, y};
 						}
 						else if (img[i] == "<name>") {
@@ -229,11 +244,14 @@ Map::Map(string file) {
 												else if (img[i] == "<data>") {
 													// a trade between player and NPC
 													if (type == "trade") {
+														// item to give and amount
+														vector<string> sp1 = splitString(img[i + 1], " ");
+														vector<string> sp2 = splitString(img[i + 2], " ");
 														// 1 is give to npc, 2 is receive from npc
-														string item1 = img[i + 1], item2 = img[i + 3];
+														string item1 = sp1[0], item2 = sp2[0];
 														// read in the give and receive amounts
 														// use NONE to denote giving or receiving nothing
-														int amount1 = stoi(img[i + 2]), amount2 = stoi(img[i + 4]);
+														int amount1 = stoi(sp1[1]), amount2 = stoi(sp2[1]);
 														// have to use capture-by-value because the variables would go outside of scope
 														dialogue.trigger = [=] (Player *pl) -> bool {
 															// takeItem returns true if item taken successfully
@@ -287,8 +305,9 @@ Map::Map(string file) {
 					for ( ; img[i] != "</resource>"; i ++) {
 						// read in coordinates on two lines
 						if (img[i] == "<coord>") {
-							res.first.first = stoi(img[i + 1]);
-							res.first.second = stoi(img[i + 2]);
+							vector<string> sp = splitString(img[i + 1], " ");
+							res.first.first = stoi(sp[0]);
+							res.first.second = stoi(sp[1]);
 						}
 						// read in item name
 						// which can be referenced with the "items" treemap to get an Item object
@@ -312,7 +331,6 @@ bool Map::inBound(int i, int j) {
 // sI and sJ are player coordinates, in absolute map position
 // top, left, hei, and wid specify the rectangular field in which bfs is done (eg: current camera view)
 void Map::enemyPathfind(int sI, int sJ, int top, int left, int hei, int wid) {
-	print ">>", top, left, hei, wid;
 	assert(0 <= top && 0 <= left && top + hei <= row && left + wid <= col);
 	// coordinates of visited and parent are relative to the rectangular field
 	vector<vector<bool>> vis(hei, vector<bool>(wid, false));
@@ -453,6 +471,7 @@ void Player::act() {
 		// set current NPC that the player is talking to
 		curNPC = &(fNPC->second);
 	}
+
 	// *** below are all actions involving weapons or tools ***
 	if (inventory[hotBarNum].first.type == "NONE") return;
 
@@ -464,38 +483,40 @@ void Player::act() {
 	// actual aoe for current facing
 	vector<vector<int>> aoeDir;
 	// relative postitioning of the top left corner of aoe matrix based on player facing
+	// TODO: shouldn't be 1 or -1, should be half of aoe size
 	int relI, relJ;
 	// facing right
 	if (faceI == 0 && faceJ == 1) {
-		relI = -1, relJ = 1;
+		relI = -N / 2, relJ = N / 2;
 		aoeDir = right;
 	}
 	// facing up
 	else if (faceI == -1 && faceJ == 0) {
-		relI = -N, relJ = -1;
+		relI = -N, relJ = -N / 2;
 		aoeDir = up;
 	}
 	// facing left
 	else if (faceI == 0 && faceJ == -1) {
-		relI = -1, relJ = -N;
+		relI = -N / 2, relJ = -N;
 		aoeDir = left;
 	}
 	// facing down
 	else if (faceI == 1 && faceJ == 0) {
-		relI = 1, relJ = -1;
+		relI = N / 2, relJ = -N / 2;
 		aoeDir = down;
 	}
 	// shouldn't be any other facing direction
 	else assert(false);
 
-	if (inventory[hotBarNum].first.type == "tool") {
-		// ii and jj and the locations in the aoeDir matrix
-		for (int ii = 0; ii < N; ii ++) {
-			for (int jj = 0; jj < N; jj ++) {
-				// (i + relI + ii, j + relJ + jj) is the absolute coordinate of the matrix element on the world map
-				int absI = i + relI + ii, absJ = j + relJ + jj;
-				// if the location in the aoe matrix is 0, then it means that's an empty spot
-				if (aoeDir[ii][jj] == 0) continue;
+	// ii and jj and the locations in the aoeDir matrix
+	for (int ii = 0; ii < N; ii ++) {
+		for (int jj = 0; jj < N; jj ++) {
+			// (i + relI + ii, j + relJ + jj) is the absolute coordinate of the matrix element on the world map
+			int absI = i + relI + ii, absJ = j + relJ + jj;
+			// if the location in the aoe matrix is 0, then it means that's an empty spot, and doesn't do any damage there
+			if (aoeDir[ii][jj] == 0) continue;
+			// if player is currently holding a tool type item in their selected hotbar slot
+			if (inventory[hotBarNum].first.type == "tool") {
 				// search the map coordinates for any resources
 				auto fResource = curMap->resources.find({absI, absJ});
 				// see whether the target block has a resource and current time is past its regrow time
@@ -507,6 +528,17 @@ void Player::act() {
 					fResource->second.second = frame + 200;
 				}
 			}
+			else if (inventory[hotBarNum].first.type == "weapon") {
+				// search the map for enemy at that locatioin
+				auto fEnemy = curMap->enemies.find({absI, absJ});
+				// if enemy at that location exists in the list of enemies
+				if (fEnemy != curMap->enemies.end()) {
+					// health subtract the damage in the spot the aoe hit
+					fEnemy->second.health -= aoeDir[ii][jj];
+					// if health falls below zero, erase enemy from list of enemies
+					if (fEnemy->second.health <= 0) curMap->enemies.erase(fEnemy);
+				}
+			}
 		}
 	}
 }
@@ -515,11 +547,13 @@ void Player::dispHotbar(int relI, int relJ) {
 	drawImage(0, camWid + 20, hotbarBox);
 	// draw items within outline
 	for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
+		// if item is NONE (meaning inventory is empty at that spot), don't draw anything
 		if (inventory[jj].first.name != "NONE") {
 			mvaddstr(1 + relI, 1 + relJ + jj * 8, 
 				(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
 		}
 	}
+	// draw current selected slot pointer
 	mvaddch(relI + 3, relJ + 3 + hotBarNum * 8, '^');
 }
 // relative coordinates to allow easy translation of object
@@ -562,11 +596,13 @@ void loadItems() {
 		// read in aoe pattern
 		else if (img[i] == "<aoe>") {
 			i ++;
-			int N = img[i].size();
+			int N = splitString(img[i], " ").size();
 			it.aoe = vector<vector<int>>(N, vector<int>(N));
+			// i is absolute line position in the data file, ii is the relative row position in the aoe matrix
 			for (int ii = 0; img[i] != "</aoe>"; ii ++, i ++) {
+				vector<string> sp = splitString(img[i], " ");
 				for (int j = 0; j < N; j ++) {
-					it.aoe[ii][j] = img[i][j] - '0';
+					it.aoe[ii][j] = stoi(sp[j]);
 				}
 			}
 		}
@@ -581,6 +617,9 @@ int main() {
 	nodelay(stdscr, TRUE);
 	keypad(stdscr, TRUE);
 	noecho();
+	// allows using -1 as natural terminal background color
+	use_default_colors();
+	start_color();
 
 	// loading preset items from txt file
 	loadItems();
@@ -588,9 +627,12 @@ int main() {
 	// testing code that can be deleted later
 	curMap = &maps.at("worldMap");
 	player.addItem(items["basic_pickaxe"]);
-	curMap->enemies.insert({{7, 2}, Enemy()});
-	curMap->enemies.insert({{20, 20}, Enemy()});
-	curMap->enemies.insert({{20, 21}, Enemy()});
+	player.addItem(items["basic_knife"]);
+	curMap->enemies.insert({{7, 2}, Enemy(10)});
+	curMap->enemies.insert({{20, 20}, Enemy(10)});
+	curMap->enemies.insert({{20, 21}, Enemy(10)});
+	makeColorPair("blue default", "blue", "default");
+	makeColorPair("green default", "green", "default");
 
 	while (true) {
 		// 50 refreshes a second
@@ -624,7 +666,11 @@ int main() {
 					// draw resource node if it exists in this block
 					else if (fResource != curMap->resources.end()) {
 						// if the resource node has regrown
-						if (fResource->second.second < frame) mvaddch(i, j, fResource->second.first.look);
+						if (fResource->second.second < frame) {
+							attron(COLOR_PAIR(colorPairs["green default"]));
+							mvaddch(i, j, fResource->second.first.look);
+							attroff(COLOR_PAIR(colorPairs["green default"]));
+						}
 					}
 					// draw npc if it exists in this block
 					else if (fNPC != curMap->npcs.end()) {
@@ -632,7 +678,9 @@ int main() {
 					}
 					// draw enemy if it exists within this block
 					else if (fEnemy != curMap->enemies.end()) {
+						attron(COLOR_PAIR(colorPairs["blue default"]));
 						mvaddch(i, j, 'E');
+						attroff(COLOR_PAIR(colorPairs["blue default"]));
 					}
 					// draw normal map block
 					else mvaddch(i, j, curMap->data[ci][cj].look);
@@ -713,9 +761,10 @@ int main() {
 			// turn viewing inventory on and off
 			else if (inp == 'e') viewInventory = !viewInventory;
 		}
-
 		// enemy pathfinding
 		if (frame % 20 == 0) {
+			// calculate rectangular space that bfs has to search through based on loadHei and loadWid
+			// only search through this area speeds up computation
 			int top = max(0, player.i - loadHei / 2), left = max(0, player.j - loadWid / 2);
 			int bottom = min(curMap->row, top + loadHei + 1), right = min(curMap->col, left + loadWid + 1);
 			curMap->enemyPathfind(player.i, player.j, top, left, bottom - top, right - left);

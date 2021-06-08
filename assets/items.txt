@@ -9,12 +9,28 @@
 		T
 	</look>
 	<aoe>
-		100
-		120
-		100
+		1 0 0
+		1 2 0
+		1 0 0
 	</aoe>
 </item>
 
+<item>
+	<name>
+		basic_knife
+	</name>
+	<type>
+		weapon
+	</type>
+	<look>
+		/
+	</look>
+	<aoe>
+		1 0 0
+		1 0 0
+		1 0 0
+	</aoe>
+</item>
 
 <item>
 	<name>

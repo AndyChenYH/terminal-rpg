@@ -25,15 +25,13 @@
 <portals>
 	<portal>
 		<coord1>
-			5
-			8
+			5 8
 		</coord1>
 		<mapTo>
 			worldMap
 		</mapTo>
 		<coord2>
-			8
-			5
+			8 5
 		</coord2>
 
 	</portal>
