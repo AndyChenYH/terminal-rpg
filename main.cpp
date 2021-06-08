@@ -97,16 +97,26 @@ map<string, int> colors = {
 	{"cyan", COLOR_CYAN},
 	{"white", COLOR_WHITE},
 };
+// treemap to map name of color pair into its id
 map<string, int> colorPairs;
+// make new color
 void makeColor(string name, int r, int g, int b) {
+	// make sure the parameters don't go over the bounds set by ncurses
 	assert(r < 1000 && g < 1000 && b < 1000 && curColorId < COLORS);
+	// initiate new color
 	init_color(curColorId, r, g, b);
+	// add the name and id of the color into the color map
 	colors.insert({name, curColorId});
+	// increment the current color identification so every new color is unique
 	curColorId ++;
 }
+// make a new color pair(what will actually be displayed on screen)
 void makeColorPair(string name, string foreground, string background) {
+	// make new pair with the foreground and background colors identified by their names
 	init_pair(curColorPairId, colors[foreground], colors[background]);
+	// add new color pair's id into the map so that it can be identified with its name
 	colorPairs.insert({name, curColorPairId});
+	// increment color pair id so every pair is unique
 	curColorPairId ++;
 }
 
@@ -331,53 +341,75 @@ bool Map::inBound(int i, int j) {
 // sI and sJ are player coordinates, in absolute map position
 // top, left, hei, and wid specify the rectangular field in which bfs is done (eg: current camera view)
 void Map::enemyPathfind(int sI, int sJ, int top, int left, int hei, int wid) {
+	// make sure the dimensions of the bfs area is within the map's boundaries
 	assert(0 <= top && 0 <= left && top + hei <= row && left + wid <= col);
 	// coordinates of visited and parent are relative to the rectangular field
 	vector<vector<bool>> vis(hei, vector<bool>(wid, false));
+	// tell a cell which other cell to go in order to get to the player
 	vector<vector<pair<int, int>>> parent(hei, vector<pair<int, int>>(wid));
+	// by default parent of a cell is itself. so if anything weird happens with the algorithm, the enemy won't move
 	for (int i = 0; i < hei; i ++) {
 		for (int j = 0; j < wid; j ++) parent[i][j] = {i, j};
 	}
 	// coordinates in queue are relative to the field
 	list<pair<int, int>> q;
 	// add the initial starting position into the queue
+	// coordinates within the rectangle substracted by top and left bounds will give relative coords in rectangle
 	q.push_back({sI - top, sJ - left});
+	// while there's still things to search
 	while (!q.empty()) {
+		// determine the next thing to search and pop it from the queue
 		int i = q.front().first, j = q.front().second;
 		q.pop_front();
+		// loop through all directional vectors
 		for (pair<int, int> d : drs) {
+			// new coordinate when the current is added with directional vector
 			int ni = i + d.first, nj = j + d.second;
+			// make sure the new coordinates are within the rectangular bounds of the field of searching
+			// make sure the absolute of the coordinates are also passable in the map
 			if (0 <= ni && ni < hei && 0 <= nj && nj < wid && data[top + ni][left + nj].pass) {
+				// only search the cell if it hasn't been visited
+				// since bfs is level by level, if a cell is searched earler, that means the other path must be faster
 				if (!vis[ni][nj]) {
+					// add the new coord to the back of the queue
 					q.push_back({ni, nj});
 					vis[ni][nj] = true;
+					// set the parent of the new coord to the current coord
+					// so that later on it knows to come here when finding shortest path
 					parent[ni][nj] = {i, j};
 				}
 			}
 		}
 	}
 
+	// inserting enemies while iterating through it might cause problems
 	map<pair<int, int>, Enemy> newPos;
 	for (pair<pair<int, int>, Enemy> pp : enemies) {
-		// absolute position
+		// absolute position of the current enemy
 		pair<int, int> absPos = pp.first;
-		// relative position
+		// relative position of the enemy
 		pair<int, int> relPos = {absPos.first - top, absPos.second - left};
+		// is the enemy within the bounds of the rectangular field (relative coordinates)
 		bool enemyIn = 0 <= relPos.first && relPos.first < hei && 0 <= relPos.second && relPos.second < wid;
+		// if the enemy is out of the field of the binary search, just insert it back as is
 		if (!enemyIn) {
 			newPos.insert(pp);
 			continue;
 		}
-
 		// relative parent
 		pair<int, int> relPar = parent[relPos.first][relPos.second];
 		// absolute parent
 		pair<int, int> absPar = {relPar.first + top, relPar.second + left};
-
+		// make sure enemy coordinates is not in newly make list of enemies or the old list of enemies
+		// and make sure it's not going into a sqaure the player is occupying
+		// otherwise, add the enemy into the new list as it is
 		if (newPos.find(absPar) != newPos.end() || enemies.find(absPar) != enemies.end()
 				|| absPar == make_pair(sI, sJ)) newPos.insert(pp);
+		// if enemy satisfys all needed conditions (within bounds, not colliding), then add its moved state into the new list
 		else newPos.insert({absPar, pp.second});
 	}
+	// by now, all the enemies in the old list should have their new spots in the new list
+	// so set the map's enemy list reference to the new list
 	enemies = newPos;
 }
 
@@ -420,6 +452,7 @@ void Player::move(int di, int dj) {
 	if (fPort != curMap->ports.end()) {
 		// perform portal teleportation
 		curMap = &maps.at(get<0>(fPort->second));
+		// get coordinates of landing spot
 		i = get<1>(fPort->second);
 		j = get<2>(fPort->second);
 	}
@@ -576,6 +609,27 @@ void Player::dispInventory(int relI, int relJ) {
 		}
 	}
 }
+// load preset colors
+void loadColors() {
+	vector<string> aml = loadAML("assets/colors.txt");
+	for (int i = 0; i < (int) aml.size(); i ++) {
+		if (aml[i] == "<colors>") {
+			i ++;
+			// every line contains a single color in the format: name r g b
+			for ( ; aml[i] != "</colors>"; i ++) {
+				vector<string> sp = splitString(aml[i], " ");
+				makeColor(sp[0], stoi(sp[1]), stoi(sp[2]), stoi(sp[3]));
+			}
+		}
+		else if (aml[i] == "<pairs>") {
+			i ++;
+			for ( ; aml[i] != "</pairs>"; i ++) {
+				vector<string> sp = splitString(aml[i], " ");
+				makeColorPair(sp[0] + "_" + sp[1], sp[0], sp[1]);
+			}
+		}
+	}
+}
 // load a bunch of preset items from assets/items.txt
 void loadItems() {
 	// also load in the special none item type
@@ -622,6 +676,7 @@ int main() {
 	start_color();
 
 	// loading preset items from txt file
+	loadColors();
 	loadItems();
 	loadMaps();
 	// testing code that can be deleted later
@@ -631,8 +686,6 @@ int main() {
 	curMap->enemies.insert({{7, 2}, Enemy(10)});
 	curMap->enemies.insert({{20, 20}, Enemy(10)});
 	curMap->enemies.insert({{20, 21}, Enemy(10)});
-	makeColorPair("blue default", "blue", "default");
-	makeColorPair("green default", "green", "default");
 
 	while (true) {
 		// 50 refreshes a second
@@ -667,9 +720,9 @@ int main() {
 					else if (fResource != curMap->resources.end()) {
 						// if the resource node has regrown
 						if (fResource->second.second < frame) {
-							attron(COLOR_PAIR(colorPairs["green default"]));
+							attron(COLOR_PAIR(colorPairs["murple_black"]));
 							mvaddch(i, j, fResource->second.first.look);
-							attroff(COLOR_PAIR(colorPairs["green default"]));
+							attroff(COLOR_PAIR(colorPairs["murple_black"]));
 						}
 					}
 					// draw npc if it exists in this block
@@ -678,9 +731,9 @@ int main() {
 					}
 					// draw enemy if it exists within this block
 					else if (fEnemy != curMap->enemies.end()) {
-						attron(COLOR_PAIR(colorPairs["blue default"]));
+//						attron(COLOR_PAIR(colorPairs["blue default"]));
 						mvaddch(i, j, 'E');
-						attroff(COLOR_PAIR(colorPairs["blue default"]));
+//						attroff(COLOR_PAIR(colorPairs["blue default"]));
 					}
 					// draw normal map block
 					else mvaddch(i, j, curMap->data[ci][cj].look);
@@ -767,6 +820,7 @@ int main() {
 			// only search through this area speeds up computation
 			int top = max(0, player.i - loadHei / 2), left = max(0, player.j - loadWid / 2);
 			int bottom = min(curMap->row, top + loadHei + 1), right = min(curMap->col, left + loadWid + 1);
+			// all enemies in the rectangle find the shortest path to player and take a step
 			curMap->enemyPathfind(player.i, player.j, top, left, bottom - top, right - left);
 		}
 

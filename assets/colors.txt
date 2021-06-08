@@ -1,0 +1,7 @@
+<colors>
+	murple 200 300 500
+</colors>
+
+<pairs>
+	murple black
+</pairs>

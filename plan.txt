@@ -146,6 +146,8 @@ map:
 	-attack animation can play out over several frames
 		-damage taken instantly
 -miscellaneous
+	-colors
+		-different types of interactable things have their own colors
 	-animation
 		-consists of images and displaying durations
 	-chat
