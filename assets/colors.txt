@@ -4,4 +4,8 @@
 
 <pairs>
 	murple black
+	blue default
+	white default
+	yellow default
+	white green
 </pairs>

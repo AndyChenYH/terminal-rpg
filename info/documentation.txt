@@ -1,0 +1,28 @@
+note: for all AML files except for image files & animation files, you can have extra spaces/tabs and empty lines
+the program will also do a basic tag-matching check
+
+map making:
+the <basicLook> tag is a must
+all cells are initialized to be passable
+
+colors:
+you can make new colors and name them in the <colors> tag
+format is name followed by rgb values
+rgb each go from 0 to 999, inclusive
+for example:
+purple 500 0 900
+
+there are already a few default colors though:
+black, red, green, yellow, blue, magenta, cyan, white, and default, which is the default background color of the terminal
+
+in the terminal, colors are actually defined as pairs, namely a foreground color and a background color
+so for you to actually use colors in the files, you have to create color pairs in the format: 
+foreground background
+
+for example:
+yellow green
+
+and you can then use them by adding a underscore between them:
+like so: yellow_green
+
+

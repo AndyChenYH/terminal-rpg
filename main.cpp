@@ -18,59 +18,6 @@ vector<vector<int>> rotateMatrix(vector<vector<int>> mat) { int N = mat.size(); 
 
 const vector<pair<int, int>> drs = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 
-// loads image from txt file and returns as list of horizontal lines
-vector<string> loadImage(string fil) {
-	ifstream fin(fil);
-	vector<string> res;
-	string ln;
-	while (getline(fin, ln)) {
-		res.push_back(ln);
-	}
-	return res;
-}
-// similar to loadimage, except reads AML(andy's markup language) and strips white spaces
-vector<string> loadAML(string fil) {
-	ifstream fin(fil);
-	vector<string> res;
-	string ln;
-	while (getline(fin, ln)) {
-		ln = trimWhite(ln);
-		if (ln != "") {
-			res.push_back(ln);
-		}
-	}
-	// check if the tags in the AML file matchs
-	list<string> st;
-	for (string s : res) {
-		if (!(s[0] == '<' && s[int(s.size()) - 1] == '>')) continue;
-		if (s[1] == '/') {
-			string tmp(s.begin(), s.end());
-			tmp.erase(tmp.begin() + 1);
-			if (st.empty() || tmp != st.back()) {
-				endwin();
-				cout << "AML file mismatch: " << s << endl;
-				exit(0);
-			}
-			st.pop_back();
-		}
-		else st.push_back(s);
-	}
-	if (!st.empty()) {
-		endwin();
-		cout << "AML file mismatch: " << st.back() << endl;
-		exit(0);
-	}
-	return res;
-}
-// draws image onto screen with top left corner at (relI, relJ)
-void drawImage(int relI, int relJ, vector<string> img) {
-	for (int i = 0; i < (int) img.size(); i ++) {
-		mvaddstr(relI + i, relJ, img[i].c_str());
-	}
-}
-// load images before hand to save time
-vector<string> hotbarBox = loadImage("assets/hotbarBox.txt");
-vector<string> inventoryBox = loadImage("assets/inventoryBox.txt");
 
 // should take more than a year to overflow integer size limit
 int frame = 0;
@@ -119,6 +66,96 @@ void makeColorPair(string name, string foreground, string background) {
 	// increment color pair id so every pair is unique
 	curColorPairId ++;
 }
+
+void drawch(int i, int j, char c, string colorpair="white_default") {
+	attron(COLOR_PAIR(colorPairs[colorpair]));
+	mvaddch(i, j, c);
+	attroff(COLOR_PAIR(colorPairs[colorpair]));
+}
+
+Image::Image() {
+	wid = hei = 0;
+}
+
+// similar to loadimage, except reads AML(andy's markup language) and strips white spaces
+vector<string> loadAML(string fil, bool trim=true) {
+	ifstream fin(fil);
+	vector<string> res;
+	string ln;
+	while (getline(fin, ln)) {
+		if (trim) ln = trimWhite(ln);
+		if (ln != "") {
+			res.push_back(ln);
+		}
+	}
+	// check if the tags in the AML file matchs
+	list<string> st;
+	for (string s : res) {
+		if (!(s[0] == '<' && s[int(s.size()) - 1] == '>')) continue;
+		if (s[1] == '/') {
+			string tmp(s.begin(), s.end());
+			tmp.erase(tmp.begin() + 1);
+			if (st.empty() || tmp != st.back()) {
+				endwin();
+				cout << "AML file mismatch: " << s << endl;
+				exit(0);
+			}
+			st.pop_back();
+		}
+		else st.push_back(s);
+	}
+	if (!st.empty()) {
+		endwin();
+		cout << "AML file mismatch: " << st.back() << endl;
+		exit(0);
+	}
+	return res;
+}
+
+// loads image from txt file and returns as list of horizontal lines
+Image loadImage(string file) {
+	// loadfile, turning the trim option off, since images might have extra spaces
+	vector<string> aml = loadAML(file, false);
+	Image img;
+	for (int i = 0; i < (int) aml.size(); i ++) {
+		if (aml[i] == "<image>") {
+			i ++;
+			img.wid = aml[i].size();
+			for (; aml[i] != "</image>"; i ++) {
+				img.looks.push_back(aml[i]);
+				// allow lines to have jagged white spaces, but ensure in the end, it's all the same width
+				img.wid = max(img.wid, (int) aml[i].size());
+			}
+			// set height after loading it in
+			img.hei = img.looks.size();
+		}
+		// one color for the entire image
+		else if (aml[i] == "<wholeColor>") {
+			img.colors = vector<vector<string>>(img.hei, vector<string>(img.wid, aml[i + 1]));
+		}
+		// specific colors for individual pixels, can be used in conjunction with wholeColor to override parts of it
+		else if (aml[i] == "<pixelColor>") {
+			i ++;
+			for ( ; aml[i] != "</pixelColor>"; i ++) {
+				vector<string> sp = splitString(aml[i], " ");
+				img.colors[stoi(sp[0])][stoi(sp[1])] = sp[2];
+			}
+		}
+	}
+	return img;
+}
+// draws image onto screen with top left corner at (relI, relJ)
+void drawImage(int relI, int relJ, Image img) {
+	for (int i = 0; i < img.hei; i ++) {
+		for (int j = 0; j < img.wid; j ++) {
+			drawch(relI + i, relJ + j, img.looks[i][j], img.colors[i][j]);
+		}
+	}
+}
+// load images before hand to save time
+Image hotbarBox = loadImage("assets/hotbarBox.txt");
+Image inventoryBox = loadImage("assets/inventoryBox.txt");
+
 
 Block::Block() {
 	pass = true;
@@ -516,7 +553,6 @@ void Player::act() {
 	// actual aoe for current facing
 	vector<vector<int>> aoeDir;
 	// relative postitioning of the top left corner of aoe matrix based on player facing
-	// TODO: shouldn't be 1 or -1, should be half of aoe size
 	int relI, relJ;
 	// facing right
 	if (faceI == 0 && faceJ == 1) {
@@ -662,6 +698,7 @@ void loadItems() {
 		}
 	}
 }
+
 Player player(5, 5);
 
 int main() {
@@ -720,20 +757,16 @@ int main() {
 					else if (fResource != curMap->resources.end()) {
 						// if the resource node has regrown
 						if (fResource->second.second < frame) {
-							attron(COLOR_PAIR(colorPairs["murple_black"]));
-							mvaddch(i, j, fResource->second.first.look);
-							attroff(COLOR_PAIR(colorPairs["murple_black"]));
+							drawch(i, j, fResource->second.first.look, "white_green");
 						}
 					}
 					// draw npc if it exists in this block
 					else if (fNPC != curMap->npcs.end()) {
-						mvaddch(i, j, '0');
+						drawch(i, j, '0', "yellow_default");
 					}
 					// draw enemy if it exists within this block
 					else if (fEnemy != curMap->enemies.end()) {
-//						attron(COLOR_PAIR(colorPairs["blue default"]));
-						mvaddch(i, j, 'E');
-//						attroff(COLOR_PAIR(colorPairs["blue default"]));
+						drawch(i, j, 'E', "blue_default");
 					}
 					// draw normal map block
 					else mvaddch(i, j, curMap->data[ci][cj].look);

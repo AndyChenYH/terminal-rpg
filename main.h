@@ -1,6 +1,14 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+class Image {
+	public:
+	int wid, hei;
+	vector<string> looks;
+	vector<vector<string>> colors;
+	Image();
+};
+
 class Block {
 	public:
 	bool pass;
