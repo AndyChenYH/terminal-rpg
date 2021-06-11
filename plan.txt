@@ -145,10 +145,14 @@ map:
 	*allows the player to attack in the direction they are facing
 	-attack animation can play out over several frames
 		-damage taken instantly
--miscellaneous
+-polished displays
 	-colors
 		-different types of interactable things have their own colors
-	-3 layers of display & colors: floor, entity, and ceiling
+	-12 layers of display & colors: floor, entity, and ceiling
+		-layer 3: displaying ground/floor, layer 6: displaying entities, layer 9: displaying ceilings
+			-each layer have 3 spaces so it's more flexible
+		-negative 1 means transparent look, "" for color means transpranet color
+		-transparency means that position in the layer will not be drawn
 	-animation
 		-consists of list of images and displaying durations
 		-displaying animation:

@@ -18,7 +18,11 @@ vector<vector<int>> rotateMatrix(vector<vector<int>> mat) { int N = mat.size(); 
 
 const vector<pair<int, int>> drs = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 const int INF = 1e9;
+const int screenHei = 30, screenWid = 80;
+const int numLayer = 12;
 
+// by default, the character displayed and the color are all transparent
+vector<vector<vector<pair<int, string>>>> layers(numLayer, vector<vector<pair<int, string>>>(screenHei, vector<pair<int, string>>(screenWid, {-1, ""})));
 
 // should take more than a year to overflow integer size limit
 int frame = 0;
@@ -67,11 +71,14 @@ void makeColorPair(string name, string foreground, string background) {
 	// increment color pair id so every pair is unique
 	curColorPairId ++;
 }
-
-void drawch(int i, int j, char c, string colorpair="white_default") {
-	attron(COLOR_PAIR(colorPairs[colorpair]));
-	mvaddch(i, j, c);
-	attroff(COLOR_PAIR(colorPairs[colorpair]));
+void layerAddCh(int layer, int i, int j, int ch, string colorpair="") {
+	assert(0 <= i && i < screenHei && 0 <= j && j < screenWid && 0 <= layer && layer < numLayer);
+	layers[layer][i][j] = {ch, colorpair};
+}
+void layerString(int layer, int i, int j, string s, string colorpair="white_default") {
+	for (int jj = 0; jj < (int) s.size() && j + jj < screenWid; jj ++) {
+		layerAddCh(layer, i, j + jj, s[jj], colorpair);
+	}
 }
 
 Image::Image() {
@@ -150,8 +157,12 @@ Image loadImage(string file) {
 	// loadAML without trimming spaces/tabs
 	return loadImageFromAML(loadAML(file, false));
 }
-Animation::Animation(vector<pair<Image, int>> animes) : lastPlayedFrame(0), animes(animes) { }
+// animation object is instaneous, it's created new every time it's used
+Animation::Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes) : 
+	layer(layer), relI(relI), relJ(relJ), lastPlayedFrame(0), animes(animes) { }
+
 // returns a list of images and their display durations
+// the loaded vector can be used multiple times
 vector<pair<Image, int>> loadAnimation(string file) {
 	vector<string> aml = loadAML(file, false);
 	// result to return
@@ -182,17 +193,17 @@ vector<pair<Image, int>> loadAnimation(string file) {
 }
 
 // draws image onto screen with top left corner at (relI, relJ)
-void drawImage(int relI, int relJ, Image img) {
+void drawImage(int layer, int relI, int relJ, Image img) {
 	for (int i = 0; i < img.hei; i ++) {
 		for (int j = 0; j < img.wid; j ++) {
-			drawch(relI + i, relJ + j, img.looks[i][j], img.colors[i][j]);
+			layerAddCh(layer, relI + i, relJ + j, img.looks[i][j], img.colors[i][j]);
 		}
 	}
 }
-void Animation::draw(int relI, int relJ) {
+void Animation::draw() {
 	if (animes.empty()) return;
 	if (frame <= lastPlayedFrame + animes[0].second) {
-		drawImage(relI, relJ, animes[0].first);
+		drawImage(layer, relI, relJ, animes[0].first);
 	}
 	else {
 		animes.erase(animes.begin());
@@ -689,22 +700,22 @@ void Player::act() {
 }
 void Player::dispHotbar(int relI, int relJ) {
 	// draw outline of hotbar
-	drawImage(0, camWid + 20, hotbarBox);
+	drawImage(3, 0, camWid + 20, hotbarBox);
 	// draw items within outline
 	for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
 		// if item is NONE (meaning inventory is empty at that spot), don't draw anything
 		if (inventory[jj].first.name != "NONE") {
-			mvaddstr(1 + relI, 1 + relJ + jj * 8, 
+			layerString(6, 1 + relI, 1 + relJ + jj * 8, 
 				(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
 		}
 	}
 	// draw current selected slot pointer
-	mvaddch(relI + 3, relJ + 3 + hotBarNum * 8, '^');
+	layerAddCh(3, relI + 3, relJ + 3 + hotBarNum * 8, '^');
 }
 // relative coordinates to allow easy translation of object
 void Player::dispInventory(int relI, int relJ) {
 	// draw outline of inventory
-	drawImage(relI, relJ, inventoryBox);
+	drawImage(3, relI, relJ, inventoryBox);
 	// current index inside player's inventory
 	int ci = 0;
 	// ii and jj are the location in the inventory matrix
@@ -714,8 +725,8 @@ void Player::dispInventory(int relI, int relJ) {
 			// make sure it's not a NONE type item (denoting empty space)
 			if (inventory[ci].first.name != "NONE") {
 				// draw the character look of the item and amount
-				mvaddstr(1 + relI + ii * 2, 1 + relJ + jj * 8, 
-						(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second)).c_str()); 
+				layerString(6, 1 + relI + ii * 2, 1 + relJ + jj * 8, 
+						(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second))); 
 			}
 			ci ++;
 		}
@@ -787,8 +798,9 @@ int main() {
 	use_default_colors();
 	start_color();
 
-	// loading preset items from txt file
+	// loading preset colors
 	loadColors();
+	// loading preset items from txt file
 	loadItems();
 	loadMaps();
 	// testing code that can be deleted later
@@ -798,7 +810,8 @@ int main() {
 	curMap->enemies.insert({{7, 2}, Enemy(10)});
 	curMap->enemies.insert({{20, 20}, Enemy(10)});
 	curMap->enemies.insert({{20, 21}, Enemy(10)});
-
+	
+	animations.push_back(Animation(9, 1, 1, loadAnimation("assets/animationtest.txt")));
 	while (true) {
 		// 50 refreshes a second
 		usleep(20000);
@@ -806,6 +819,8 @@ int main() {
 		player.checkQuests();
 		// clears screen of any output before next cycle; ncurses optimizes which characters to change
 		erase();
+		// clear layers for next drawing
+		for (auto &lay : layers) for (int i = 0; i < screenHei; i ++) for (int j = 0; j < screenWid; j ++) lay[i][j] = {-1, ""};
 		// drawing the scene within camera scope
 		// i and j are the cli screen positions
 		for (int i = 0; i < camWid; i ++) {
@@ -815,7 +830,7 @@ int main() {
 				int cj = player.j + j - camWid / 2;
 				// draw player
 				if (ci == player.i && cj == player.j) {
-					mvaddch(i, j, '@');
+					layerAddCh(6, i, j, '@');
 				}
 				// draw the sparse things stored as treemaps
 				else if (curMap->inBound(ci, cj)) {
@@ -826,35 +841,36 @@ int main() {
 					auto fEnemy = curMap->enemies.find({ci, cj});
 					if (fPort != curMap->ports.end()) {
 						// make sure ports and resource node aren't on the same block
-						mvaddch(i, j, '^');
+						layerAddCh(6, i, j, '^');
 					}
 					// draw resource node if it exists in this block
 					else if (fResource != curMap->resources.end()) {
 						// if the resource node has regrown
 						if (fResource->second.second < frame) {
-							drawch(i, j, fResource->second.first.look, "white_green");
+							layerAddCh(6, i, j, fResource->second.first.look, "white_green");
 						}
 					}
 					// draw npc if it exists in this block
 					else if (fNPC != curMap->npcs.end()) {
-						drawch(i, j, '0', "yellow_default");
+						layerAddCh(6, i, j, '0', "yellow_default");
 					}
 					// draw enemy if it exists within this block
 					else if (fEnemy != curMap->enemies.end()) {
-						drawch(i, j, 'E', "blue_default");
+						layerAddCh(6, i, j, 'E', "blue_default");
 					}
 					// draw normal map block
-					else mvaddch(i, j, curMap->data[ci][cj].look);
+
+					else layerAddCh(3, i, j, curMap->data[ci][cj].look);
 				}
 				// empty void for things that go out of the map
 				else {
-					mvaddch(i, j, ' ');
+					layerAddCh(3, i, j, ' ');
 				}
 			}
 		}
 		// drawing npc dialogue in talking mode
 		if (isTalking) {
-			mvaddstr(4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words.c_str());
+			layerString(6, 4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words);
 		}
 		// drawing player inventory
 		if (viewInventory) player.dispInventory(0, camWid + 20);
@@ -862,9 +878,20 @@ int main() {
 			player.dispHotbar(0, camWid + 20);
 		}
 		for (Animation &animation : animations) {
-			animation.draw(1, 1);
+			animation.draw();
 		}
-
+		for (vector<vector<pair<int, string>>> lay : layers) {
+			for (int i = 0; i < screenHei; i ++) {
+				for (int j = 0; j < screenWid; j ++) {
+					// -1 means transparent character look
+					if (lay[i][j].first == -1) continue;
+					// "" means transparent, or empty color
+					if (lay[i][j].second != "" ) attron(COLOR_PAIR(colorPairs[lay[i][j].second]));
+					mvaddch(i, j, lay[i][j].first);
+					if (lay[i][j].second != "" ) attroff(COLOR_PAIR(colorPairs[lay[i][j].second]));
+				}
+			}
+		}
 		// uploads drawing onto terminal
 		refresh();
 		int inp = getch();

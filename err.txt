@@ -1,0 +1,63 @@
+=================================================================
+==84504==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x61a00002e1a0 at pc 0x00010cdea256 bp 0x7ffee2e1dce0 sp 0x7ffee2e1dcd8
+WRITE of size 4 at 0x61a00002e1a0 thread T0
+    #0 0x10cdea255 in std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >::operator=(std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >&&) utility:532
+    #1 0x10cdf0198 in drawImage(int, int, int, Image) main.cpp:191
+    #2 0x10ce06264 in Player::dispHotbar(int, int) main.cpp:695
+    #3 0x10ce0c4bc in main main.cpp:873
+    #4 0x7fff205e8620 in start+0x0 (libdyld.dylib:x86_64+0x15620)
+
+0x61a00002e1a0 is located 32 bytes to the right of 1280-byte region [0x61a00002dc80,0x61a00002e180)
+allocated by thread T0 here:
+    #0 0x10cfea7ed in wrap__Znwm+0x7d (libclang_rt.asan_osx_dynamic.dylib:x86_64h+0x557ed)
+    #1 0x10ce2c2ad in std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >::__vallocate(unsigned long) vector:994
+    #2 0x10ce2f180 in std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >::vector(std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > const&) vector:1257
+    #3 0x10ce8492b in void std::__1::allocator_traits<std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > > >::__construct_range_forward<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*, std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*>(std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > >&, std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*, std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*, std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*&) memory:1693
+    #4 0x10ce847b0 in std::__1::enable_if<__is_cpp17_forward_iterator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*>::value, void>::type std::__1::vector<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >, std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > > >::__construct_at_end<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*>(std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*, std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >*, unsigned long) vector:1076
+    #5 0x10ce844f8 in std::__1::vector<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >, std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > > >::vector(std::__1::vector<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >, std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > > > const&) vector:1258
+    #6 0x10ce301a3 in std::__1::vector<std::__1::vector<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >, std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > > >, std::__1::allocator<std::__1::vector<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >, std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > > > > >::vector(unsigned long, std::__1::vector<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > >, std::__1::allocator<std::__1::vector<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >, std::__1::allocator<std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > > > > > const&) vector:1155
+    #7 0x10ce85377 in _GLOBAL__sub_I_main.cpp main.cpp
+    #8 0x110afc078 in ImageLoaderMachO::doModInitFunctions(ImageLoader::LinkContext const&)+0x22e (dyld:x86_64+0x1d078)
+    #9 0x110afc477 in ImageLoaderMachO::doInitialization(ImageLoader::LinkContext const&)+0x27 (dyld:x86_64+0x1d477)
+    #10 0x110af6d19 in ImageLoader::recursiveInitialization(ImageLoader::LinkContext const&, unsigned int, char const*, ImageLoader::InitializerTimingList&, ImageLoader::UninitedUpwards&)+0x1eb (dyld:x86_64+0x17d19)
+    #11 0x110af4b81 in ImageLoader::processInitializers(ImageLoader::LinkContext const&, unsigned int, ImageLoader::InitializerTimingList&, ImageLoader::UninitedUpwards&)+0xbb (dyld:x86_64+0x15b81)
+    #12 0x110af4c21 in ImageLoader::runInitializers(ImageLoader::LinkContext const&, ImageLoader::InitializerTimingList&)+0x51 (dyld:x86_64+0x15c21)
+    #13 0x110ae162e in dyld::initializeMainExecutable()+0xc6 (dyld:x86_64+0x262e)
+    #14 0x110ae79a3 in dyld::_main(macho_header const*, unsigned long, int, char const**, char const**, char const**, unsigned long*)+0x205f (dyld:x86_64+0x89a3)
+    #15 0x110ae022a in dyldbootstrap::start(dyld3::MachOLoaded const*, int, char const**, dyld3::MachOLoaded const*, unsigned long*)+0x1c8 (dyld:x86_64+0x122a)
+    #16 0x110ae0024 in _dyld_start+0x24 (dyld:x86_64+0x1024)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow utility:532 in std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >::operator=(std::__1::pair<int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >&&)
+Shadow bytes around the buggy address:
+  0x1c3400005be0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x1c3400005bf0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x1c3400005c00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x1c3400005c10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x1c3400005c20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x1c3400005c30: fa fa fa fa[fa]fa fa fa fa fa fa fa fa fa fa fa
+  0x1c3400005c40: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x1c3400005c50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x1c3400005c60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x1c3400005c70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x1c3400005c80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==84504==ABORTING

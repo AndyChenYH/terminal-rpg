@@ -10,12 +10,14 @@ class Image {
 };
 class Animation {
 	public:
+	int layer, relI, relJ;
 	// the frame the the last image was played; used to keep track of when to display next image
 	int lastPlayedFrame;
 	// list of images and their display durations
+
 	vector<pair<Image, int>> animes;
-	Animation(vector<pair<Image, int>> animes);
-	void draw(int relI, int relJ);
+	Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes);
+	void draw();
 };
 
 class Block {
