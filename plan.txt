@@ -63,9 +63,9 @@ development plan:
 item:
 -items of different types
 	*attributes: name, damage, amount, AOE pattern
-	-resources
-	-weapons
-		-will attack where player is facing
+	*resources
+	*weapons
+		*will attack where player is facing
 		-plays animation for a few seconds
 	-clothes that add to different stats
 	*tools for harvesting resources
@@ -122,7 +122,6 @@ map:
 	-can take quests from the npc
 -quests
 	-can be taken from npc
-	-gives rewards automatically when completed
 	-quest class with string(quest description), and lambda function that checks for completion & gives rewards
 	-when taken: passes lambda function to player that will be run once in a while
 		-checks for completion status & reward if necessary
@@ -149,8 +148,12 @@ map:
 -miscellaneous
 	-colors
 		-different types of interactable things have their own colors
+	-3 layers of display & colors: floor, entity, and ceiling
 	-animation
-		-consists of images and displaying durations
+		-consists of list of images and displaying durations
+		-displaying animation:
+			-make a new Animation object with loaded list of images & durations and set lastPlayedFrame to 0
+			-every frame, loop through list of animation objects, and see if lastPlayedFrame + animes[0].second <= frame; if so, draw the image; otherwise, delete animes[0].
 	-chat
 		-ingame information, npc dialogue
 		-stored in queue

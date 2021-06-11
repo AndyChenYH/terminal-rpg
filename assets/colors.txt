@@ -8,4 +8,6 @@
 	white default
 	yellow default
 	white green
+	magenta blue
+	white yellow
 </pairs>

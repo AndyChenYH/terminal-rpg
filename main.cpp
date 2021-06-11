@@ -17,6 +17,7 @@ vector<string> splitString(const string str, const string delim) { vector<string
 vector<vector<int>> rotateMatrix(vector<vector<int>> mat) { int N = mat.size(); for (int x = 0; x < N / 2; x++) { for (int y = x; y < N - x - 1; y++) { int temp = mat[x][y]; mat[x][y] = mat[y][N - 1 - x]; mat[y][N - 1 - x] = mat[N - 1 - x][N - 1 - y]; mat[N - 1 - x][N - 1 - y] = mat[N - 1 - y][x]; mat[N - 1 - y][x] = temp; } } return mat; }
 
 const vector<pair<int, int>> drs = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+const int INF = 1e9;
 
 
 // should take more than a year to overflow integer size limit
@@ -112,16 +113,16 @@ vector<string> loadAML(string fil, bool trim=true) {
 	return res;
 }
 
-// loads image from txt file and returns as list of horizontal lines
-Image loadImage(string file) {
-	// loadfile, turning the trim option off, since images might have extra spaces
-	vector<string> aml = loadAML(file, false);
+// loads image from aml file and returns as Image object: consisting of looks and colors
+// helper function
+Image loadImageFromAML(vector<string> aml) {
 	Image img;
 	for (int i = 0; i < (int) aml.size(); i ++) {
-		if (aml[i] == "<image>") {
+		// basic look tag
+		if (aml[i] == "<look>") {
 			i ++;
 			img.wid = aml[i].size();
-			for (; aml[i] != "</image>"; i ++) {
+			for (; aml[i] != "</look>"; i ++) {
 				img.looks.push_back(aml[i]);
 				// allow lines to have jagged white spaces, but ensure in the end, it's all the same width
 				img.wid = max(img.wid, (int) aml[i].size());
@@ -144,6 +145,42 @@ Image loadImage(string file) {
 	}
 	return img;
 }
+// load image from file. the actual function used on the outside
+Image loadImage(string file) {
+	// loadAML without trimming spaces/tabs
+	return loadImageFromAML(loadAML(file, false));
+}
+Animation::Animation(vector<pair<Image, int>> animes) : lastPlayedFrame(0), animes(animes) { }
+// returns a list of images and their display durations
+vector<pair<Image, int>> loadAnimation(string file) {
+	vector<string> aml = loadAML(file, false);
+	// result to return
+	vector<pair<Image, int>> animes;
+	for (int i = 0; i < (int) aml.size(); i ++) {
+		if (aml[i] == "<frame>") {
+			// single frame to add to animes vector
+			pair<Image, int> anime;
+			for ( ; aml[i] != "</frame>"; i ++) {
+				if (aml[i] == "<image>") {
+					// this will be filled with lines between the <image> tag and passed to loadImageFromAML to create image object
+					vector<string> imageAML;
+					i ++;
+					for ( ; aml[i] != "</image>"; i ++) {
+						imageAML.push_back(aml[i]);
+					}
+					// loading aml with helper function and using it to set the image in anime variable
+					anime.first = loadImageFromAML(imageAML);
+				}
+				else if (aml[i] == "<duration>") {
+					anime.second = stoi(aml[i + 1]);
+				}
+			}
+			animes.push_back(anime);
+		}
+	}
+	return animes;
+}
+
 // draws image onto screen with top left corner at (relI, relJ)
 void drawImage(int relI, int relJ, Image img) {
 	for (int i = 0; i < img.hei; i ++) {
@@ -152,10 +189,21 @@ void drawImage(int relI, int relJ, Image img) {
 		}
 	}
 }
+void Animation::draw(int relI, int relJ) {
+	if (animes.empty()) return;
+	if (frame <= lastPlayedFrame + animes[0].second) {
+		drawImage(relI, relJ, animes[0].first);
+	}
+	else {
+		animes.erase(animes.begin());
+		lastPlayedFrame = frame;
+	}
+}
 // load images before hand to save time
+// have to use no trim
 Image hotbarBox = loadImage("assets/hotbarBox.txt");
 Image inventoryBox = loadImage("assets/inventoryBox.txt");
-
+vector<Animation> animations;
 
 Block::Block() {
 	pass = true;
@@ -291,24 +339,43 @@ Map::Map(string file) {
 												else if (img[i] == "<data>") {
 													// a trade between player and NPC
 													if (type == "trade") {
-														// item to give and amount
-														vector<string> sp1 = splitString(img[i + 1], " ");
-														vector<string> sp2 = splitString(img[i + 2], " ");
-														// 1 is give to npc, 2 is receive from npc
-														string item1 = sp1[0], item2 = sp2[0];
-														// read in the give and receive amounts
-														// use NONE to denote giving or receiving nothing
-														int amount1 = stoi(sp1[1]), amount2 = stoi(sp2[1]);
-														// have to use capture-by-value because the variables would go outside of scope
+														// initialie vector of things to give and receive
+														vector<pair<string, int>> give, receive;
+														for ( ; img[i] != "</data>"; i ++) {
+															if (img[i] == "<give>") {
+																i ++;
+																// loop through all the items to give
+																for ( ; img[i] != "</give>"; i ++) {
+																	vector<string> sp = splitString(img[i], " ");
+																	give.push_back({sp[0], stoi(sp[1])});
+																}
+															}
+															else if (img[i] == "<receive>") {
+																i ++;
+																// look through all the items to receive
+																for ( ; img[i] != "</receive>"; i ++) {
+																	vector<string> sp = splitString(img[i], " ");
+																	receive.push_back({sp[0], stoi(sp[1])});
+																}
+															}
+														}
+														// define trigger function
 														dialogue.trigger = [=] (Player *pl) -> bool {
-															// takeItem returns true if item taken successfully
-															bool res = item1 == "NONE" ? true : pl->takeItem(items[item1], amount1);
-															// if successfully took item, player can now receive reward
-															if (res && item2 != "NONE") pl->addItem(items[item2], amount2);
-															// the returned value is used to determine whether dialogue can advance
-															return res;
+															// look through all the things to give and whether player can give
+															for (pair<string, int> pp : give) {
+																if (pl->itemCount(items[pp.first]) < pp.second) {
+																	// if any item isn't satisfied, player cannot give
+																	return false;
+																}
+															}
+															// player has enough of all needed items, so take them out of inventory
+															for (pair<string, int> pp : give) pl->takeItem(items[pp.first], pp.second);
+															// player receive items from npc
+															for (pair<string, int> pp : receive) {
+																pl->addItem(items[pp.first], pp.second);
+															}
+															return true;
 														};
-
 													}
 												}
 											}
@@ -514,6 +581,15 @@ void Player::addItem(Item newIt, int num = 1) {
 	// item couldn't be added; probably because inventory is full
 	assert(false);
 }
+// count how many of the items the player has
+int Player::itemCount(Item it) {
+	for (pair<Item, int> pp : inventory) {
+		if (it.name == pp.first.name) {
+			return pp.second;
+		}
+	}
+	return 0;
+}
 // if item exists in inventory, take it out and return true
 // otherwise return false
 bool Player::takeItem(Item takeIt, int num = 1) {
@@ -700,7 +776,6 @@ void loadItems() {
 }
 
 Player player(5, 5);
-
 int main() {
 	initscr();
 	cbreak();
@@ -785,6 +860,9 @@ int main() {
 		if (viewInventory) player.dispInventory(0, camWid + 20);
 		else {
 			player.dispHotbar(0, camWid + 20);
+		}
+		for (Animation &animation : animations) {
+			animation.draw(1, 1);
 		}
 
 		// uploads drawing onto terminal

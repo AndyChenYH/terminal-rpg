@@ -8,6 +8,15 @@ class Image {
 	vector<vector<string>> colors;
 	Image();
 };
+class Animation {
+	public:
+	// the frame the the last image was played; used to keep track of when to display next image
+	int lastPlayedFrame;
+	// list of images and their display durations
+	vector<pair<Image, int>> animes;
+	Animation(vector<pair<Image, int>> animes);
+	void draw(int relI, int relJ);
+};
 
 class Block {
 	public:
@@ -51,6 +60,7 @@ class Player {
 	void checkQuests();
 	void move(int di, int dj);
 	void addItem(Item newIt, int num);
+	int itemCount(Item it);
 	bool takeItem(Item takeIt, int num);
 	void act();
 	void dispHotbar(int relI, int relJ);
