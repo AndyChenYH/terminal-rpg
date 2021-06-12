@@ -1,6 +1,11 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+int test(string s) {
+	return s.size();
+}
+
 int main() {
-	for (int i = 0; i < 1; i ++) for (int j = 0; j < 2; j ++) for (int k = 0; k < 3; k ++) printf("%d %d %d\n", i, j, k);
+	string s = "hello";
+	printf("%d\n", test(s.c_str()));
 }

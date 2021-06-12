@@ -51,6 +51,7 @@ map<string, int> colors = {
 };
 // treemap to map name of color pair into its id
 map<string, int> colorPairs;
+
 // make new color
 void makeColor(string name, int r, int g, int b) {
 	// make sure the parameters don't go over the bounds set by ncurses
@@ -171,8 +172,8 @@ Image loadImage(string file) {
 	return loadImageFromAML(loadAML(file, false));
 }
 // animation object is instaneous, it's created new every time it's used
-Animation::Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes) : 
-	layer(layer), relI(relI), relJ(relJ), lastPlayedFrame(0), animes(animes) { }
+Animation::Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes, bool isOnMap) : 
+	layer(layer), relI(relI), relJ(relJ), lastPlayedFrame(frame), animes(animes), isOnMap(isOnMap) { }
 
 // returns a list of images and their display durations
 // the loaded vector can be used multiple times
@@ -214,7 +215,7 @@ void drawImage(int layer, int relI, int relJ, Image img) {
 	}
 }
 void Animation::draw() {
-	if (animes.empty()) return;
+	assert(!animes.empty());
 	if (frame <= lastPlayedFrame + animes[0].second) {
 		drawImage(layer, relI, relJ, animes[0].first);
 	}
@@ -224,9 +225,9 @@ void Animation::draw() {
 	}
 }
 // load images before hand to save time
-// have to use no trim
 Image hotbarBox = loadImage("assets/hotbarBox.txt");
 Image inventoryBox = loadImage("assets/inventoryBox.txt");
+vector<pair<Image, int>> aoeBlock = loadAnimation("assets/playerAoeBlock.txt");
 vector<Animation> animations;
 
 Block::Block() {
@@ -682,10 +683,16 @@ void Player::act() {
 		for (int jj = 0; jj < N; jj ++) {
 			// (i + relI + ii, j + relJ + jj) is the absolute coordinate of the matrix element on the world map
 			int absI = i + relI + ii, absJ = j + relJ + jj;
+			// position of this aoe block on the cli screen
+			int winI = absI - i + camHei / 2, winJ = absJ - j + camWid / 2;
 			// if the location in the aoe matrix is 0, then it means that's an empty spot, and doesn't do any damage there
 			if (aoeDir[ii][jj] == 0) continue;
 			// if player is currently holding a tool type item in their selected hotbar slot
 			if (inventory[hotBarNum].first.type == "tool") {
+				// check if aoe display coordinate are in bound
+				if (0 <= winI && winI < screenHei && 0 <= winJ && winJ < screenWid) {
+					animations.push_back(Animation(7, winI, winJ, aoeBlock));
+				}
 				// search the map coordinates for any resources
 				auto fResource = curMap->resources.find({absI, absJ});
 				// see whether the target block has a resource and current time is past its regrow time
@@ -823,8 +830,8 @@ int main() {
 	curMap->enemies.insert({{7, 2}, Enemy(10)});
 	curMap->enemies.insert({{20, 20}, Enemy(10)});
 	curMap->enemies.insert({{20, 21}, Enemy(10)});
-	
-	animations.push_back(Animation(9, 10, 10, loadAnimation("assets/animationtest.txt")));
+//	animations.push_back(Animation(9, 10, 10, loadAnimation("assets/animationtest.txt")));
+
 	while (true) {
 		// 50 refreshes a second
 		usleep(20000);
@@ -890,8 +897,13 @@ int main() {
 		else {
 			player.dispHotbar(0, camWid + 20);
 		}
-		for (Animation &animation : animations) {
-			animation.draw();
+		for (int i = 0; i < (int) animations.size(); i ++) {
+			// if there are no frames left in the animation, delete it from list of animations
+			if (animations[i].animes.empty()) {
+				animations.erase(animations.begin() + i);
+				i --;
+			}
+			else animations[i].draw();
 		}
 		// the one grid to distill down the character looks and colors from the layers and finally display it
 		// this has to be used, since color is not carried over from previous layers
@@ -900,6 +912,7 @@ int main() {
 		for (vector<vector<pair<int, string>>> lay : layers) {
 			for (int i = 0; i < screenHei; i ++) {
 				for (int j = 0; j < screenWid; j ++) {
+					// if the cell is tranparent, don't put it on canvas, so the thing from the previous level will carry over
 					if (lay[i][j].first != -1) canvas[i][j].first = lay[i][j].first;
 					if (lay[i][j].second != "") canvas[i][j].second = lay[i][j].second;
 				}
@@ -907,6 +920,7 @@ int main() {
 		}
 		for (int i = 0; i < screenHei; i ++) {
 			for (int j = 0; j < screenWid; j ++) {
+				// actual drawing
 				attron(COLOR_PAIR(colorPairs[canvas[i][j].second]));
 				mvaddch(i, j, canvas[i][j].first);
 				attroff(COLOR_PAIR(colorPairs[canvas[i][j].second]));

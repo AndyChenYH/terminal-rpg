@@ -1,0 +1,16 @@
+<frame>
+<image>
+<look>
+*
+</look>
+<wholeColor>
+white_yellow
+</wholeColor>
+<transparentChar>
+0 0
+</transparentChar>
+</image>
+<duration>
+5
+</duration>
+</frame>

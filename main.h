@@ -17,7 +17,10 @@ class Animation {
 	int lastPlayedFrame;
 	// list of images and their display durations
 	vector<pair<Image, int>> animes;
-	Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes);
+	// whether this animation is being drawn on the map or not
+	// if so, then all coordinates are relative to the map & will only be translated to absolute coords when drawn
+	bool isOnMap;
+	Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes, bool isOnMap);
 	void draw();
 };
 
