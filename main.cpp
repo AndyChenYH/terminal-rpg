@@ -52,6 +52,9 @@ map<string, int> colors = {
 // treemap to map name of color pair into its id
 map<string, int> colorPairs;
 
+// translates coordinates on the map to terminal screen coordinates
+pair<int, int> mapCoordToCli(int i, int j);
+
 // make new color
 void makeColor(string name, int r, int g, int b) {
 	// make sure the parameters don't go over the bounds set by ncurses
@@ -217,7 +220,15 @@ void drawImage(int layer, int relI, int relJ, Image img) {
 void Animation::draw() {
 	assert(!animes.empty());
 	if (frame <= lastPlayedFrame + animes[0].second) {
-		drawImage(layer, relI, relJ, animes[0].first);
+		// if the animation is supposed to be draw relative to the map coordinates
+		if (isOnMap) {
+			// convert map coords to cli coords
+			pair<int, int> winPos = mapCoordToCli(relI, relJ);
+			drawImage(layer, winPos.first, winPos.second, animes[0].first);
+		}
+		// draw the image with coordinates relative to cli
+		else drawImage(layer, relI, relJ, animes[0].first);
+
 	}
 	else {
 		animes.erase(animes.begin());
@@ -683,16 +694,14 @@ void Player::act() {
 		for (int jj = 0; jj < N; jj ++) {
 			// (i + relI + ii, j + relJ + jj) is the absolute coordinate of the matrix element on the world map
 			int absI = i + relI + ii, absJ = j + relJ + jj;
-			// position of this aoe block on the cli screen
-			int winI = absI - i + camHei / 2, winJ = absJ - j + camWid / 2;
+			// check if coordinate of aoe cell on map is in bound
+			if (!(0 <= absI && absI < curMap->row && 0 <= absJ && absJ < curMap->col)) continue;
 			// if the location in the aoe matrix is 0, then it means that's an empty spot, and doesn't do any damage there
 			if (aoeDir[ii][jj] == 0) continue;
 			// if player is currently holding a tool type item in their selected hotbar slot
 			if (inventory[hotBarNum].first.type == "tool") {
-				// check if aoe display coordinate are in bound
-				if (0 <= winI && winI < screenHei && 0 <= winJ && winJ < screenWid) {
-					animations.push_back(Animation(7, winI, winJ, aoeBlock));
-				}
+				// make new one-block animation at the aoe coordinate, with isOnMap being true
+				animations.push_back(Animation(7, absI, absJ, aoeBlock, true));
 				// search the map coordinates for any resources
 				auto fResource = curMap->resources.find({absI, absJ});
 				// see whether the target block has a resource and current time is past its regrow time
@@ -807,6 +816,12 @@ void loadItems() {
 }
 
 Player player(5, 5);
+
+
+pair<int, int> mapCoordToCli(int i, int j) {
+	return {i - player.i + camHei / 2, j - player.j + camWid / 2};
+}
+
 int main() {
 	initscr();
 	cbreak();

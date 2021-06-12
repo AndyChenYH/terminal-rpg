@@ -14,3 +14,20 @@ white_yellow
 5
 </duration>
 </frame>
+
+<frame>
+<image>
+<look>
+*
+</look>
+<wholeColor>
+magenta_blue
+</wholeColor>
+<transparentChar>
+0 0
+</transparentChar>
+</image>
+<duration>
+5
+</duration>
+</frame>
