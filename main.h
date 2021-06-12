@@ -4,7 +4,9 @@ using namespace std;
 class Image {
 	public:
 	int wid, hei;
-	vector<string> looks;
+	// use -1 for transparent look
+	vector<vector<int>> looks;
+	// use "" for transparent color
 	vector<vector<string>> colors;
 	Image();
 };
@@ -14,7 +16,6 @@ class Animation {
 	// the frame the the last image was played; used to keep track of when to display next image
 	int lastPlayedFrame;
 	// list of images and their display durations
-
 	vector<pair<Image, int>> animes;
 	Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes);
 	void draw();

@@ -11,7 +11,6 @@
 |       |       |       |       |
 |-------|-------|-------|-------|
 </look>
-
 <wholeColor>
 murple_black
 </wholeColor>

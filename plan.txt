@@ -152,7 +152,8 @@ map:
 		-layer 3: displaying ground/floor, layer 6: displaying entities, layer 9: displaying ceilings
 			-each layer have 3 spaces so it's more flexible
 		-negative 1 means transparent look, "" for color means transpranet color
-		-transparency means that position in the layer will not be drawn
+		-transparency means that position in the layer will not be drawn, and that things below it will be shown instead
+			-use additional canvas vector grid to keep track of actual displayed character and color
 	-animation
 		-consists of list of images and displaying durations
 		-displaying animation:

@@ -122,6 +122,7 @@ vector<string> loadAML(string fil, bool trim=true) {
 
 // loads image from aml file and returns as Image object: consisting of looks and colors
 // helper function
+// -1 for character means transparent, "" for color means transparent
 Image loadImageFromAML(vector<string> aml) {
 	Image img;
 	for (int i = 0; i < (int) aml.size(); i ++) {
@@ -129,13 +130,25 @@ Image loadImageFromAML(vector<string> aml) {
 		if (aml[i] == "<look>") {
 			i ++;
 			img.wid = aml[i].size();
-			for (; aml[i] != "</look>"; i ++) {
-				img.looks.push_back(aml[i]);
+			// ii is the relative line number in the image matrix
+			for (int ii = 0; aml[i] != "</look>"; ii ++, i ++) {
+				// empty vector of ints for loading in line 
+				img.looks.push_back({});
+				for (int j = 0; j < (int) aml[i].size(); j ++) {
+					img.looks[ii].push_back(aml[i][j]);
+				}
 				// allow lines to have jagged white spaces, but ensure in the end, it's all the same width
 				img.wid = max(img.wid, (int) aml[i].size());
 			}
 			// set height after loading it in
 			img.hei = img.looks.size();
+		}
+		else if (aml[i] == "<transparentChar>") {
+			i ++;
+			for ( ; aml[i] != "</transparentChar>"; i ++) {
+				vector<string> sp = splitString(aml[i], " ");
+				img.looks[stoi(sp[0])][stoi(sp[1])] = -1;
+			}
 		}
 		// one color for the entire image
 		else if (aml[i] == "<wholeColor>") {
@@ -705,12 +718,12 @@ void Player::dispHotbar(int relI, int relJ) {
 	for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
 		// if item is NONE (meaning inventory is empty at that spot), don't draw anything
 		if (inventory[jj].first.name != "NONE") {
-			layerString(6, 1 + relI, 1 + relJ + jj * 8, 
+			layerString(9, 1 + relI, 1 + relJ + jj * 8, 
 				(string(1, inventory[jj].first.look) + "   " + to_string(inventory[jj].second)).c_str()); 
 		}
 	}
 	// draw current selected slot pointer
-	layerAddCh(3, relI + 3, relJ + 3 + hotBarNum * 8, '^');
+	layerAddCh(9, relI + 3, relJ + 3 + hotBarNum * 8, '^');
 }
 // relative coordinates to allow easy translation of object
 void Player::dispInventory(int relI, int relJ) {
@@ -725,7 +738,7 @@ void Player::dispInventory(int relI, int relJ) {
 			// make sure it's not a NONE type item (denoting empty space)
 			if (inventory[ci].first.name != "NONE") {
 				// draw the character look of the item and amount
-				layerString(6, 1 + relI + ii * 2, 1 + relJ + jj * 8, 
+				layerString(9, 1 + relI + ii * 2, 1 + relJ + jj * 8, 
 						(string(1, inventory[ci].first.look) + "   " + to_string(inventory[ci].second))); 
 			}
 			ci ++;
@@ -811,7 +824,7 @@ int main() {
 	curMap->enemies.insert({{20, 20}, Enemy(10)});
 	curMap->enemies.insert({{20, 21}, Enemy(10)});
 	
-	animations.push_back(Animation(9, 1, 1, loadAnimation("assets/animationtest.txt")));
+	animations.push_back(Animation(9, 10, 10, loadAnimation("assets/animationtest.txt")));
 	while (true) {
 		// 50 refreshes a second
 		usleep(20000);
@@ -880,16 +893,23 @@ int main() {
 		for (Animation &animation : animations) {
 			animation.draw();
 		}
+		// the one grid to distill down the character looks and colors from the layers and finally display it
+		// this has to be used, since color is not carried over from previous layers
+		// canvas will not deal with transparency such as -1 and "". it will be displayed as is
+		vector<vector<pair<char, string>>> canvas(screenHei, vector<pair<char, string>>(screenWid, {' ', "white_default"}));
 		for (vector<vector<pair<int, string>>> lay : layers) {
 			for (int i = 0; i < screenHei; i ++) {
 				for (int j = 0; j < screenWid; j ++) {
-					// -1 means transparent character look
-					if (lay[i][j].first == -1) continue;
-					// "" means transparent, or empty color
-					if (lay[i][j].second != "" ) attron(COLOR_PAIR(colorPairs[lay[i][j].second]));
-					mvaddch(i, j, lay[i][j].first);
-					if (lay[i][j].second != "" ) attroff(COLOR_PAIR(colorPairs[lay[i][j].second]));
+					if (lay[i][j].first != -1) canvas[i][j].first = lay[i][j].first;
+					if (lay[i][j].second != "") canvas[i][j].second = lay[i][j].second;
 				}
+			}
+		}
+		for (int i = 0; i < screenHei; i ++) {
+			for (int j = 0; j < screenWid; j ++) {
+				attron(COLOR_PAIR(colorPairs[canvas[i][j].second]));
+				mvaddch(i, j, canvas[i][j].first);
+				attroff(COLOR_PAIR(colorPairs[canvas[i][j].second]));
 			}
 		}
 		// uploads drawing onto terminal
