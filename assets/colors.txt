@@ -10,4 +10,5 @@
 	white green
 	magenta blue
 	white yellow
+	murple white
 </pairs>

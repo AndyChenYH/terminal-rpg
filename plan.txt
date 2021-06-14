@@ -6,11 +6,11 @@ regularly update the game with new content (map area, quests, weapons & gears) t
 remember to make plenty of comments!
 
 game storyline:
-	npc vibing along, monster tries to kill them & village
-	player has conscious and unconscious
-		internal dialogue, giving hints and ques
-		unconscious is big IQ & schemes against player
-			unconsioucs wants to kill bad guy so IT can be the bad guy
+	-npc vibing along, monster tries to kill them & village
+	-player has conscious and unconscious
+		-internal dialogue, giving hints and ques
+		-unconscious is big IQ & schemes against player
+			-unconsioucs wants to kill bad guy so IT can be the bad guy
 	seemingly innocent at first, then gets darker because influence from unconscious
 		mission become more villanous and evil
 		constantly tries to explain its evil actions
@@ -44,7 +44,7 @@ development plan:
 				*if you want multiple items...do it in another dialogue
 
 
--refactor file reading: without the use of lambdas
+*refactor file reading: without the use of lambdas
 
 *npc class
 	*name, dialogue triggers when acted upon
@@ -61,13 +61,13 @@ development plan:
 *accept quests from npc
 
 item:
--items of different types
+*items of different types
 	*attributes: name, damage, amount, AOE pattern
 	*resources
 	*weapons
 		*will attack where player is facing
-		-plays animation for a few seconds
-	-clothes that add to different stats
+		*plays animation for a few seconds
+	*clothes that add to different stats
 	*tools for harvesting resources
 	*different items will be determined through class instances
 		*stored in treemap<name, item>
@@ -96,8 +96,8 @@ player:
 	*draw better looking inventory
 		*default view is a bunch of boxes with Item.look character
 		*allow player to press 'i' to enter view inventory mode
-		-while in view inventory mode, player can use arrow keys to navigate around inventory
-			-displays a specific description of item
+		*while in view inventory mode, player can use arrow keys to navigate around inventory
+			*displays a specific description of item
 		*hotbar
 			*4 items that the player can instantly access using 1-4 number keys
 		
@@ -115,52 +115,56 @@ map:
 *has buildings that the player could go into
 	*each separate building has its own map data stored in currentMap
 
--has npc that the player could interact with
-	-npc do not move
-	-can buy things from npc, who has unlimited inventory
-	-can sell things to npc
-	-can take quests from the npc
--quests
-	-can be taken from npc
-	-quest class with string(quest description), and lambda function that checks for completion & gives rewards
-	-when taken: passes lambda function to player that will be run once in a while
-		-checks for completion status & reward if necessary
-			-function<bool(Player*)>
-			-returns true and false based on quest completion status & whether its ok to remove quest
-			-modifies player stats as needed
-			-every few frames, loops through list of quests & runs lambda function
-	-types:
-		-killing monsters
-		-collecting natural resources
-		-visiting a npc
--enemies
-	-only attacks when next to player
-	-health, name, look
-	-have preset types, loaded through enemies.txt AML file
-	-allow extensibility to larger enemies occupying multiple cells
--combat
+*has npc that the player could interact with
+	*npc do not move
+	*can buy things from npc, who has unlimited inventory
+	*can sell things to npc
+	*can take quests from the npc
+*quests
+	*can be taken from npc
+	*quest class with string(quest description), and lambda function that checks for completion & gives rewards
+	*when taken: passes lambda function to player that will be run once in a while
+		*checks for completion status & reward if necessary
+			*function<bool(Player*)>
+			*returns true and false based on quest completion status & whether its ok to remove quest
+			*modifies player stats as needed
+			*every few frames, loops through list of quests & runs lambda function
+	*types:
+		*killing monsters
+		*collecting natural resources
+		*visiting a npc
+*enemies
+	*only attacks when next to player
+	*health, name, look
+	*have preset types, loaded through enemies.txt AML file
+	*allow extensibility to larger enemies occupying multiple cells
+	-drops item on the ground when dead
+*combat
 	*attacks are laid out in a 3x3 grid-like shape with some square being empty
 	*enemies use pathfinding to walk to a square next to the player to attack
 
 	*allows the player to attack in the direction they are facing
-	-attack animation can play out over several frames
-		-damage taken instantly
--polished displays
-	-colors
-		-different types of interactable things have their own colors
-	-12 layers of display & colors: floor, entity, and ceiling
-		-layer 3: displaying ground/floor, layer 6: displaying entities, layer 9: displaying ceilings
-			-each layer have 3 spaces so it's more flexible
-		-negative 1 means transparent look, "" for color means transpranet color
-		-transparency means that position in the layer will not be drawn, and that things below it will be shown instead
-			-use additional canvas vector grid to keep track of actual displayed character and color
-	-animation
-		-consists of list of images and displaying durations
-		-displaying animation:
-			-make a new Animation object with loaded list of images & durations and set lastPlayedFrame to 0
-			-every frame, loop through list of animation objects, and see if lastPlayedFrame + animes[0].second <= frame; if so, draw the image; otherwise, delete animes[0].
+	*attack animation can play out over several frames
+		*damage taken instantly
+*polished displays
+	*colors
+		*different types of interactable things have their own colors
+	*12 layers of display & colors: floor, entity, and ceiling
+		*layer 3: displaying ground/floor, layer 6: displaying entities, layer 9: displaying ceilings
+			*layers have 3 spaces between them so it's more flexible
+		*negative 1 means transparent look, "" for color means transpranet color
+		*transparency means that position in the layer will not be drawn, and that things below it will be shown instead
+			*use additional canvas vector grid to keep track of actual displayed character and color
+	*animation
+		*consists of list of images and displaying durations
+		*displaying animation:
+			*make a new Animation object with loaded list of images & durations and set lastPlayedFrame to 0
+			*every frame, loop through list of animation objects, and see if frame <= lastPlayedFrame + animes[0].second; if so, draw the image; otherwise, delete animes[0].
 	-chat
 		-ingame information, npc dialogue
 		-stored in queue
+
 -crafting
 	-select from a list of recipes and waiting for a while for crafting to complete
+
+-change the AML file tag match check

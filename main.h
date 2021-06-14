@@ -9,6 +9,8 @@ class Image {
 	// use "" for transparent color
 	vector<vector<string>> colors;
 	Image();
+	// rotate look and colors counterclockwise by 90 degrees; must be a square image
+	void rotate();
 };
 class Animation {
 	public:
@@ -39,12 +41,16 @@ class Item {
 	string type;
 	// single character appearance
 	char look;
+	// length of time (frames) needed for this to regrow
+	int growTime;
 	// area of effect & damage at each location
 	// must be a N*N matrix, where N is odd, so that it can be properly rotated and player can stand in middle
 	// for weapons, the aoe numbers represent damage bonus
 	// for resources, the aoe numbers represents the harvested amount
 	// 0 means the spot is not affected by the aoe, any other positive number means affected
 	vector<vector<int>> aoe;
+	// animation that plays when the item is used
+	vector<pair<Image, int>> aoeAnime;
 	Item();
 	Item(string name, string type, char look);
 };

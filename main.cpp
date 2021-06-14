@@ -14,11 +14,11 @@ string trimWhite(const string& str, const string& whitespace = " \t") { const au
 // split string by delimiter
 vector<string> splitString(const string str, const string delim) { vector<string> tokens; size_t prev = 0, pos = 0; do { pos = str.find(delim, prev); if (pos == string::npos) pos = str.length(); string token = str.substr(prev, pos-prev); if (!token.empty()) tokens.push_back(token); prev = pos + delim.length(); } while (pos < str.length() && prev < str.length()); return tokens; }
 // rotates a square matrix counter clockwise 90 degrees
-vector<vector<int>> rotateMatrix(vector<vector<int>> mat) { int N = mat.size(); for (int x = 0; x < N / 2; x++) { for (int y = x; y < N - x - 1; y++) { int temp = mat[x][y]; mat[x][y] = mat[y][N - 1 - x]; mat[y][N - 1 - x] = mat[N - 1 - x][N - 1 - y]; mat[N - 1 - x][N - 1 - y] = mat[N - 1 - y][x]; mat[N - 1 - y][x] = temp; } } return mat; }
+template <typename T> vector<vector<T>> rotateMatrix(vector<vector<T>> mat) { int N = mat.size(); for (int x = 0; x < N / 2; x++) { for (int y = x; y < N - x - 1; y++) { T temp = mat[x][y]; mat[x][y] = mat[y][N - 1 - x]; mat[y][N - 1 - x] = mat[N - 1 - x][N - 1 - y]; mat[N - 1 - x][N - 1 - y] = mat[N - 1 - y][x]; mat[N - 1 - y][x] = temp; } } return mat; }
 
 const vector<pair<int, int>> drs = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
 const int INF = 1e9;
-const int screenHei = 30, screenWid = 80;
+const int screenHei = 30, screenWid = 100;
 const int numLayer = 12;
 
 // by default, the character displayed and the color are all transparent
@@ -31,7 +31,7 @@ bool isTalking = false;
 // is player looking at inventory?
 bool viewInventory = false;
 // should be odd numbers, so player will be in middle
-const int camHei = 21, camWid = 21;
+const int camHei = 30, camWid = 30;
 // rectangular area in which things will be constantly refreshed/loaded
 const int loadHei = 50, loadWid = 50;
 // current color pair id; used in init_pair and attron(COLOR_PAIR()) to identify individual color pairs
@@ -89,16 +89,45 @@ Image::Image() {
 	wid = hei = 0;
 }
 
+void Image::rotate() {
+	assert(wid == hei);
+	looks = rotateMatrix(looks);
+	colors = rotateMatrix(colors);
+}
+
 // similar to loadimage, except reads AML(andy's markup language) and strips white spaces
-vector<string> loadAML(string fil, bool trim=true) {
+vector<string> loadAML(string fil) {
 	ifstream fin(fil);
 	vector<string> res;
 	string ln;
+	// if currently is raw, don't trim
+	bool isRaw = false;
 	while (getline(fin, ln)) {
-		if (trim) ln = trimWhite(ln);
+		string trimmed = trimWhite(ln);
+		if (trimmed == "<raw>") {
+			isRaw = true;
+			continue;
+		}
+		if (trimmed == "</raw>") {
+			// if tag is closed before an opening is even detected
+			if (!isRaw) {
+				endwin();
+				cout << "raw tag mismatch" << endl;
+				exit(0);
+			}
+			isRaw = false;
+			continue;
+		}
+		if (!isRaw) ln = trimmed;
+		// don't add empty lines to result
 		if (ln != "") {
 			res.push_back(ln);
 		}
+	}
+	if (isRaw) {
+		endwin();
+		cout << "raw tag mismatch" << endl;
+		exit(0);
 	}
 	// check if the tags in the AML file matchs
 	list<string> st;
@@ -109,7 +138,7 @@ vector<string> loadAML(string fil, bool trim=true) {
 			tmp.erase(tmp.begin() + 1);
 			if (st.empty() || tmp != st.back()) {
 				endwin();
-				cout << "AML file mismatch: " << s << endl;
+				cout << fil << ": AML file mismatch: " << s << endl;
 				exit(0);
 			}
 			st.pop_back();
@@ -118,16 +147,15 @@ vector<string> loadAML(string fil, bool trim=true) {
 	}
 	if (!st.empty()) {
 		endwin();
-		cout << "AML file mismatch: " << st.back() << endl;
+		cout << fil << ": AML file mismatch: " << st.back() << endl;
 		exit(0);
 	}
 	return res;
 }
 
 // loads image from aml file and returns as Image object: consisting of looks and colors
-// helper function
 // -1 for character means transparent, "" for color means transparent
-Image loadImageFromAML(vector<string> aml) {
+Image loadImage(vector<string> aml) {
 	Image img;
 	for (int i = 0; i < (int) aml.size(); i ++) {
 		// basic look tag
@@ -147,11 +175,22 @@ Image loadImageFromAML(vector<string> aml) {
 			// set height after loading it in
 			img.hei = img.looks.size();
 		}
+		// the character will not be drawn and the level underneath it will be shown instead
 		else if (aml[i] == "<transparentChar>") {
 			i ++;
 			for ( ; aml[i] != "</transparentChar>"; i ++) {
 				vector<string> sp = splitString(aml[i], " ");
+				// -1 represents transparent character
 				img.looks[stoi(sp[0])][stoi(sp[1])] = -1;
+			}
+		}
+		// the color will not be drawn and the level underneath ith will be shown instead
+		else if (aml[i] == "<transparentColor>") {
+			i ++;
+			for ( ; aml[i] != "</transparentColor>"; i ++) {
+				vector<string> sp = splitString(aml[i], " ");
+				// "" reprensents transparent color
+				img.colors[stoi(sp[0])][stoi(sp[1])] = "";
 			}
 		}
 		// one color for the entire image
@@ -169,19 +208,13 @@ Image loadImageFromAML(vector<string> aml) {
 	}
 	return img;
 }
-// load image from file. the actual function used on the outside
-Image loadImage(string file) {
-	// loadAML without trimming spaces/tabs
-	return loadImageFromAML(loadAML(file, false));
-}
 // animation object is instaneous, it's created new every time it's used
 Animation::Animation(int layer, int relI, int relJ, vector<pair<Image, int>> animes, bool isOnMap) : 
 	layer(layer), relI(relI), relJ(relJ), lastPlayedFrame(frame), animes(animes), isOnMap(isOnMap) { }
 
 // returns a list of images and their display durations
 // the loaded vector can be used multiple times
-vector<pair<Image, int>> loadAnimation(string file) {
-	vector<string> aml = loadAML(file, false);
+vector<pair<Image, int>> loadAnimation(vector<string> aml) {
 	// result to return
 	vector<pair<Image, int>> animes;
 	for (int i = 0; i < (int) aml.size(); i ++) {
@@ -190,14 +223,14 @@ vector<pair<Image, int>> loadAnimation(string file) {
 			pair<Image, int> anime;
 			for ( ; aml[i] != "</frame>"; i ++) {
 				if (aml[i] == "<image>") {
-					// this will be filled with lines between the <image> tag and passed to loadImageFromAML to create image object
+					// this will be filled with lines between the <image> tag and passed to loadImage to create image object
 					vector<string> imageAML;
 					i ++;
 					for ( ; aml[i] != "</image>"; i ++) {
 						imageAML.push_back(aml[i]);
 					}
 					// loading aml with helper function and using it to set the image in anime variable
-					anime.first = loadImageFromAML(imageAML);
+					anime.first = loadImage(imageAML);
 				}
 				else if (aml[i] == "<duration>") {
 					anime.second = stoi(aml[i + 1]);
@@ -236,9 +269,8 @@ void Animation::draw() {
 	}
 }
 // load images before hand to save time
-Image hotbarBox = loadImage("assets/hotbarBox.txt");
-Image inventoryBox = loadImage("assets/inventoryBox.txt");
-vector<pair<Image, int>> aoeBlock = loadAnimation("assets/playerAoeBlock.txt");
+Image hotbarBox = loadImage(loadAML("assets/hotbarBox.txt"));
+Image inventoryBox = loadImage(loadAML("assets/inventoryBox.txt"));
 vector<Animation> animations;
 
 Block::Block() {
@@ -664,6 +696,8 @@ void Player::act() {
 	int N = right.size();
 	// actual aoe for current facing
 	vector<vector<int>> aoeDir;
+	// aoe animation
+	vector<pair<Image, int>> aoeAnime = inventory[hotBarNum].first.aoeAnime;
 	// relative postitioning of the top left corner of aoe matrix based on player facing
 	int relI, relJ;
 	// facing right
@@ -675,20 +709,30 @@ void Player::act() {
 	else if (faceI == -1 && faceJ == 0) {
 		relI = -N, relJ = -N / 2;
 		aoeDir = up;
+		for (pair<Image, int> &pp : aoeAnime) pp.first.rotate();
 	}
 	// facing left
 	else if (faceI == 0 && faceJ == -1) {
 		relI = -N / 2, relJ = -N;
 		aoeDir = left;
+		for (pair<Image, int> &pp : aoeAnime) {
+			pp.first.rotate();
+			pp.first.rotate();
+		}
 	}
 	// facing down
 	else if (faceI == 1 && faceJ == 0) {
 		relI = N / 2, relJ = -N / 2;
 		aoeDir = down;
+		for (pair<Image, int> &pp : aoeAnime) {
+			pp.first.rotate();
+			pp.first.rotate();
+			pp.first.rotate();
+		}
 	}
 	// shouldn't be any other facing direction
 	else assert(false);
-
+	animations.push_back(Animation(7, i + relI, j + relJ, aoeAnime, true));
 	// ii and jj and the locations in the aoeDir matrix
 	for (int ii = 0; ii < N; ii ++) {
 		for (int jj = 0; jj < N; jj ++) {
@@ -700,8 +744,6 @@ void Player::act() {
 			if (aoeDir[ii][jj] == 0) continue;
 			// if player is currently holding a tool type item in their selected hotbar slot
 			if (inventory[hotBarNum].first.type == "tool") {
-				// make new one-block animation at the aoe coordinate, with isOnMap being true
-				animations.push_back(Animation(7, absI, absJ, aoeBlock, true));
 				// search the map coordinates for any resources
 				auto fResource = curMap->resources.find({absI, absJ});
 				// see whether the target block has a resource and current time is past its regrow time
@@ -709,8 +751,8 @@ void Player::act() {
 					// aoeDir[ii][[jj] is the amount the tool can harvest in the given spot in the aoe matrix
 					// adding the resource and amount to the player's inventory
 					addItem(fResource->second.first, aoeDir[ii][jj]);
-					// set resource's regrow time to 200 frames in the future
-					fResource->second.second = frame + 200;
+					// set resource's regrow time to its "growTime" number of frames in the future
+					fResource->second.second = frame + fResource->second.first.growTime;
 				}
 			}
 			else if (inventory[hotBarNum].first.type == "weapon") {
@@ -799,6 +841,7 @@ void loadItems() {
 		else if (img[i] == "<name>") { it.name = img[i + 1]; }
 		else if (img[i] == "<type>") { it.type = img[i + 1]; }
 		else if (img[i] == "<look>") { it.look = img[i + 1][0]; }
+		else if (img[i] == "<growTime>") { it.growTime = stoi(img[i + 1]); }
 		// read in aoe pattern
 		else if (img[i] == "<aoe>") {
 			i ++;
@@ -811,6 +854,16 @@ void loadItems() {
 					it.aoe[ii][j] = stoi(sp[j]);
 				}
 			}
+		}
+		else if (img[i] == "<aoeAnime>") {
+			i ++;
+			// aml that will be filled and passed to loadAnimation to create vector<pair<Image, int>>
+			vector<string> animeAML;
+			for ( ; img[i] != "</aoeAnime>"; i ++) {
+				animeAML.push_back(img[i]);
+			}
+			// finally, load the animation from aml and set it to the item's attribute
+			it.aoeAnime = loadAnimation(animeAML);
 		}
 	}
 }
@@ -845,7 +898,6 @@ int main() {
 	curMap->enemies.insert({{7, 2}, Enemy(10)});
 	curMap->enemies.insert({{20, 20}, Enemy(10)});
 	curMap->enemies.insert({{20, 21}, Enemy(10)});
-//	animations.push_back(Animation(9, 10, 10, loadAnimation("assets/animationtest.txt")));
 
 	while (true) {
 		// 50 refreshes a second
@@ -858,8 +910,8 @@ int main() {
 		for (auto &lay : layers) for (int i = 0; i < screenHei; i ++) for (int j = 0; j < screenWid; j ++) lay[i][j] = {-1, ""};
 		// drawing the scene within camera scope
 		// i and j are the cli screen positions
-		for (int i = 0; i < camWid; i ++) {
-			for (int j = 0; j < camHei; j ++) {
+		for (int i = 0; i < camHei; i ++) {
+			for (int j = 0; j < camWid; j ++) {
 				// ci and cj are the map relative positives
 				int ci = player.i + i - camHei / 2;
 				int cj = player.j + j - camWid / 2;

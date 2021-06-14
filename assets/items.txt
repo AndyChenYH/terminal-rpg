@@ -13,6 +13,44 @@
 		1 2 0
 		1 0 0
 	</aoe>
+	<aoeAnime>
+		<frame>
+			<image>
+				<look>
+<raw>
+***
+***
+***
+</raw>
+				</look>
+				<wholeColor>
+					white_yellow
+				</wholeColor>
+				<transparentChar>
+					0 0
+					0 1
+					0 2
+					1 0
+					1 1
+					1 2
+					2 0
+					2 1
+					2 2
+				</transparentChar>
+				<transparentColor>
+					0 1
+					0 2
+					1 2
+					2 1
+					2 2
+				</transparentColor>
+			</image>
+			<duration>
+				5
+			</duration>
+		</frame>
+
+	</aoeAnime>
 </item>
 
 <item>
@@ -30,6 +68,73 @@
 		5 5 5
 		5 5 0
 	</aoe>
+	<aoeAnime>
+		<frame>
+			<image>
+				<look>
+<raw>
+***
+***
+***
+</raw>
+				</look>
+				<wholeColor>
+					murple_white
+				</wholeColor>
+				<transparentChar>
+					0 0
+					0 1
+					0 2
+					1 0
+					1 1
+					1 2
+					2 0
+					2 1
+					2 2
+				</transparentChar>
+				<transparentColor>
+					0 2
+					2 2
+				</transparentColor>
+			</image>
+			<duration>
+				2
+			</duration>
+		</frame>
+
+		<frame>
+			<image>
+				<look>
+<raw>
+***
+***
+***
+</raw>
+				</look>
+				<wholeColor>
+					magenta_blue
+				</wholeColor>
+				<transparentChar>
+					0 0
+					0 1
+					0 2
+					1 0
+					1 1
+					1 2
+					2 0
+					2 1
+					2 2
+				</transparentChar>
+				<transparentColor>
+					0 2
+					2 2
+				</transparentColor>
+			</image>
+			<duration>
+				2
+			</duration>
+		</frame>
+	</aoeAnime>
 </item>
 
 <item>
@@ -42,6 +147,9 @@
 	<look>
 		&
 	</look>
+	<growTime>
+		200
+	</growTime>
 </item>
 
 <item>
@@ -66,6 +174,9 @@
 	<look>
 		+
 	</look>
+	<growTime>
+		50
+	</growTime>
 </item>
 
 <item>
@@ -78,4 +189,7 @@
 	<look>
 		}
 	</look>
+	<growTime>
+		300
+	</growTime>
 </item>

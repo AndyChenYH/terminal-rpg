@@ -1,8 +1,10 @@
 <look>
+	<raw>
 ---------------------------------
-|       |       |AAAAAAA|       |
+|       |       |       |       |
 ---------------------------------
+	</raw>
 </look>
 <wholeColor>
-blue_default
+	blue_default
 </wholeColor>

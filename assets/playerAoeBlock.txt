@@ -1,33 +1,37 @@
 <frame>
-<image>
-<look>
+	<image>
+	<look>
+		<raw>
 *
-</look>
-<wholeColor>
-white_yellow
-</wholeColor>
-<transparentChar>
-0 0
-</transparentChar>
-</image>
-<duration>
-5
-</duration>
+		</raw>
+	</look>
+	<wholeColor>
+		white_yellow
+	</wholeColor>
+	<transparentChar>
+		0 0
+	</transparentChar>
+	</image>
+	<duration>
+		5
+	</duration>
 </frame>
 
 <frame>
-<image>
-<look>
+	<image>
+		<look>
+			<raw>
 *
-</look>
-<wholeColor>
-magenta_blue
-</wholeColor>
-<transparentChar>
-0 0
-</transparentChar>
-</image>
-<duration>
-5
-</duration>
+			</raw>
+		</look>
+		<wholeColor>
+			magenta_blue
+		</wholeColor>
+		<transparentChar>
+			0 0
+		</transparentChar>
+	</image>
+	<duration>
+		5
+	</duration>
 </frame>
