@@ -31,7 +31,7 @@ bool isTalking = false;
 // is player looking at inventory?
 bool viewInventory = false;
 // should be odd numbers, so player will be in middle
-const int camHei = 30, camWid = 30;
+const int camHei = 20, camWid = 40;
 // rectangular area in which things will be constantly refreshed/loaded
 const int loadHei = 50, loadWid = 50;
 // current color pair id; used in init_pair and attron(COLOR_PAIR()) to identify individual color pairs
@@ -771,7 +771,7 @@ void Player::act() {
 }
 void Player::dispHotbar(int relI, int relJ) {
 	// draw outline of hotbar
-	drawImage(3, 0, camWid + 20, hotbarBox);
+	drawImage(3, relI, relJ, hotbarBox);
 	// draw items within outline
 	for (int jj = 0; jj < min(4, int(inventory.size())); jj ++) {
 		// if item is NONE (meaning inventory is empty at that spot), don't draw anything
@@ -934,7 +934,7 @@ int main() {
 					else if (fResource != curMap->resources.end()) {
 						// if the resource node has regrown
 						if (fResource->second.second < frame) {
-							layerAddCh(6, i, j, fResource->second.first.look, "white_green");
+							layerAddCh(3, i, j, fResource->second.first.look, "white_green");
 						}
 					}
 					// draw npc if it exists in this block
