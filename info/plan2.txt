@@ -1,0 +1,2 @@
+-do stack first before reading in
+-enemy aoe attack player by checking in all directions

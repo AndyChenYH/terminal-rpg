@@ -34,6 +34,10 @@ bool viewInventory = false;
 const int camHei = 20, camWid = 40;
 // rectangular area in which things will be constantly refreshed/loaded
 const int loadHei = 50, loadWid = 50;
+
+// vector used to store chat information
+vector<string> chat;
+
 // current color pair id; used in init_pair and attron(COLOR_PAIR()) to identify individual color pairs
 // current color id: used in init_color to identify individual colors; numbers 0-7 are taken by original colors
 int curColorPairId = 1, curColorId = 8;
@@ -684,6 +688,8 @@ void Player::act() {
 		isTalking = true;
 		// set current NPC that the player is talking to
 		curNPC = &(fNPC->second);
+		assert(curNPC->diaNum < (int) curNPC->dialogues.size());
+		chat.push_back(curNPC->dialogues[curNPC->diaNum].words);
 	}
 
 	// *** below are all actions involving weapons or tools ***
@@ -876,6 +882,8 @@ pair<int, int> mapCoordToCli(int i, int j) {
 }
 
 int main() {
+	// output separater
+	print "--------------------------------------------";
 	initscr();
 	cbreak();
 	// allows getch() to get input at any time, without waiting for input
@@ -964,6 +972,11 @@ int main() {
 		else {
 			player.dispHotbar(0, camWid + 20);
 		}
+		// draw chat
+		for (int i = 0; i < (int) chat.size(); i ++) {
+			layerString(3, camHei + 1 + i, 0, chat[i]);
+		}
+
 		for (int i = 0; i < (int) animations.size(); i ++) {
 			// if there are no frames left in the animation, delete it from list of animations
 			if (animations[i].animes.empty()) {
@@ -1008,10 +1021,14 @@ int main() {
 						// if lambda returns true (allows dialogue to advance)
 						if (curNPC->dialogues[curNPC->diaNum].trigger(&player)) {
 							curNPC->diaNum ++;
+							if (curNPC->diaNum < (int) curNPC->dialogues.size()) chat.push_back(curNPC->dialogues[curNPC->diaNum].words);
 						}
 					}
 					// if there's not trigger condition to fullfill, advance to the next diaglogue
-					else curNPC->diaNum ++;
+					else {
+						curNPC->diaNum ++;
+						if (curNPC->diaNum < (int) curNPC->dialogues.size()) chat.push_back(curNPC->dialogues[curNPC->diaNum].words);
+					}
 				}
 				// if reaches end of dialogue chain, end talking
 				if (curNPC->diaNum == (int) curNPC->dialogues.size()) {
