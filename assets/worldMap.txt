@@ -148,6 +148,21 @@
 			</dialogue>
 			<dialogue>
 				<words>
+					My name is andy chen and do you like to eat fish?
+				</words>
+			</dialogue>
+			<dialogue>
+				<words>
+					ur mom is NOT gay. I repeat she is NOT gay!
+				</words>
+			</dialogue>
+			<dialogue>
+				<words>
+					will you please tell me how to get to the village, please?
+				</words>
+			</dialogue>
+			<dialogue>
+				<words>
 					can you get me 2 roses and 3 cactus?
 				</words>
 				<trigger>

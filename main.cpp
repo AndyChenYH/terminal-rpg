@@ -35,6 +35,8 @@ const int camHei = 20, camWid = 40;
 // rectangular area in which things will be constantly refreshed/loaded
 const int loadHei = 50, loadWid = 50;
 
+// dimensions of chat box
+const int chatHei = 10, chatWid = 20;
 // vector used to store chat information
 vector<string> chat;
 
@@ -882,8 +884,8 @@ pair<int, int> mapCoordToCli(int i, int j) {
 }
 
 int main() {
-	// output separater
-	print "--------------------------------------------";
+	// output separator
+	print "------------------------------";
 	initscr();
 	cbreak();
 	// allows getch() to get input at any time, without waiting for input
@@ -963,18 +965,30 @@ int main() {
 				}
 			}
 		}
-		// drawing npc dialogue in talking mode
-		if (isTalking) {
-			layerString(6, 4, camWid + 10, curNPC->dialogues[curNPC->diaNum].words);
-		}
 		// drawing player inventory
 		if (viewInventory) player.dispInventory(0, camWid + 20);
 		else {
 			player.dispHotbar(0, camWid + 20);
 		}
+
 		// draw chat
-		for (int i = 0; i < (int) chat.size(); i ++) {
-			layerString(3, camHei + 1 + i, 0, chat[i]);
+		// lines for splitting the sentences into lines that can fit within chatbox width
+		vector<string> lines;
+		lines.push_back("");
+		for (string s : chat) {
+			vector<string> ss = splitString(s, " ");
+			for (int i = 0; i < (int) ss.size(); i ++) {
+				string wd = ss[i];
+				if (!(lines.back().size() + wd.size() < chatWid)) {
+					lines.push_back("");
+				}
+				lines.back() += wd + " ";
+			}
+			lines.push_back("");
+		}
+		for (int i = max((int) lines.size() - chatHei, 0), row = max(0, chatHei - int(lines.size())); 
+				i < (int) lines.size(); row ++, i ++) {
+			layerString(3, camHei + row, 0, lines[i]);
 		}
 
 		for (int i = 0; i < (int) animations.size(); i ++) {
@@ -1083,4 +1097,3 @@ int main() {
 	}
 	endwin();
 }
-
