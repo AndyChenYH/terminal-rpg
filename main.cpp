@@ -36,7 +36,7 @@ const int camHei = 20, camWid = 40;
 const int loadHei = 50, loadWid = 50;
 
 // dimensions of chat box
-const int chatHei = 10, chatWid = 20;
+const int chatHei = 10, chatWid = 40;
 // vector used to store chat information
 vector<string> chat;
 
@@ -103,42 +103,17 @@ void Image::rotate() {
 
 // similar to loadimage, except reads AML(andy's markup language) and strips white spaces
 vector<string> loadAML(string fil) {
+	// initial reading in file
 	ifstream fin(fil);
-	vector<string> res;
-	string ln;
-	// if currently is raw, don't trim
-	bool isRaw = false;
-	while (getline(fin, ln)) {
-		string trimmed = trimWhite(ln);
-		if (trimmed == "<raw>") {
-			isRaw = true;
-			continue;
-		}
-		if (trimmed == "</raw>") {
-			// if tag is closed before an opening is even detected
-			if (!isRaw) {
-				endwin();
-				cout << "raw tag mismatch" << endl;
-				exit(0);
-			}
-			isRaw = false;
-			continue;
-		}
-		if (!isRaw) ln = trimmed;
-		// don't add empty lines to result
-		if (ln != "") {
-			res.push_back(ln);
-		}
-	}
-	if (isRaw) {
-		endwin();
-		cout << "raw tag mismatch" << endl;
-		exit(0);
-	}
+	string line;
+	vector<string> file;
+	while (getline(fin, line)) file.push_back(line);
 	// check if the tags in the AML file matchs
 	list<string> st;
-	for (string s : res) {
+	for (string s : file) {
+		print s;
 		if (!(s[0] == '<' && s[int(s.size()) - 1] == '>')) continue;
+		s = trimWhite(s);
 		if (s[1] == '/') {
 			string tmp(s.begin(), s.end());
 			tmp.erase(tmp.begin() + 1);
@@ -155,6 +130,26 @@ vector<string> loadAML(string fil) {
 		endwin();
 		cout << fil << ": AML file mismatch: " << st.back() << endl;
 		exit(0);
+	}
+
+	vector<string> res;
+	// if currently is raw, don't trim
+	bool isRaw = false;
+	for (string ln : file) {
+		string trimmed = trimWhite(ln);
+		if (trimmed == "<raw>") {
+			isRaw = true;
+			continue;
+		}
+		if (trimmed == "</raw>") {
+			isRaw = false;
+			continue;
+		}
+		if (!isRaw) ln = trimmed;
+		// don't add empty lines to result
+		if (ln != "") {
+			res.push_back(ln);
+		}
 	}
 	return res;
 }

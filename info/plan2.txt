@@ -1,2 +1,8 @@
--do stack first before reading in
+reading in data:
+	-do stack first before reading in
+	-<file> tag can be used to replace any AML code
 -enemy aoe attack player by checking in all directions
+-chat display
+	-only display from bottom up
+-talking mode: show npc's face to hint at the player that they are talking
+-fix all the complex statements in the global scope
